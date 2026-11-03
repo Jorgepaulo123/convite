@@ -130,11 +130,11 @@ function TelaStage({
     return connectScreenWebSocket({
       onToast: (t) => enqueueRef.current(t),
       onState: (next) =>
-        setScreenState((prev) => ({
-          mode: next.mode,
-          active_media: next.active_media,
-          live_slides: next.live_slides ?? prev?.live_slides ?? [],
-        })),
+        setScreenState({
+          mode: next.mode ?? "live",
+          active_media: next.active_media ?? null,
+          live_slides: next.live_slides ?? [],
+        }),
       onOpen: () => setWsLive(true),
       onClose: () => setWsLive(false),
     });
