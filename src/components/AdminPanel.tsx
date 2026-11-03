@@ -25,7 +25,9 @@ import {
   adminUpdateProgramItem,
   adminUpdateEventInfo,
   adminDeleteGalleryItem,
+  adminDeleteLiveSlide,
   adminUploadGallery,
+  adminUploadLiveSlide,
   adminUploadScreenMedia,
   fetchEventInfo,
   fetchGallery,
@@ -92,7 +94,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
   const journeyGalleryQuery = useQuery({
     queryKey: ["gallery"],
     queryFn: fetchGallery,
-    enabled: section === "gallery" || section === "screen",
+    enabled: section === "gallery",
   });
 
   const programQuery = useQuery({
@@ -196,8 +198,19 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     setErr("");
     try {
       for (const f of Array.from(files)) await adminUploadGallery(f);
-      setMsg("Fotos carregadas — aparecem no convite (secção A Jornada).");
+      setMsg("Fotos carregadas — aparecem no convite (A Jornada).");
       await qc.invalidateQueries({ queryKey: ["gallery"] });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erro no upload");
+    }
+  };
+
+  const onLiveSlides = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setErr("");
+    try {
+      for (const f of Array.from(files)) await adminUploadLiveSlide(f);
+      setMsg("Fotos ao vivo carregadas — slideshow em /tela (modo Ao vivo).");
       await qc.invalidateQueries({ queryKey: ["screen-state"] });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro no upload");
@@ -458,27 +471,35 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
 
             {screenPanel === "live" && (
               <section className="mt-8">
-                <h3 className="mb-1 text-lg font-semibold">Fotos no fundo (Ao vivo)</h3>
+                <h3 className="mb-1 text-lg font-semibold">Galeria ao vivo (/tela)</h3>
                 <p className="mb-4 text-sm text-muted-foreground">
-                  Usa a mesma galeria do convite (A Jornada): fotos que carregas no menu{" "}
-                  <button type="button" className="font-medium text-primary underline" onClick={() => setSection("gallery")}>
-                    Galeria
-                  </button>{" "}
-                  e selfies enviadas pelos convidados. Passam em sequência em /tela e aparecem no final do convite.
+                  Só estas fotos rodam no fundo quando o modo <strong>Ao vivo</strong> está activo. Independentes da galeria
+                  principal (A Jornada) no menu Galeria.
                 </p>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {(journeyGalleryQuery.data ?? []).slice(0, 8).map((item) => (
-                    <img
-                      key={item.id}
-                      src={mediaUrl(item.url)}
-                      alt=""
-                      className="aspect-[3/4] rounded-lg object-cover"
-                      loading="lazy"
-                    />
+                <label className="glass mb-4 grid h-36 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground">
+                  Carregar fotos para o slideshow ao vivo
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onLiveSlides(e.target.files)} />
+                </label>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                  {(screenStateQuery.data?.live_slides ?? []).map((item) => (
+                    <figure key={item.id} className="glass relative overflow-hidden rounded-xl">
+                      <img src={mediaUrl(item.url)} alt="" className="aspect-[3/4] w-full object-cover" loading="lazy" />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-2 rounded-full bg-destructive/90 px-2 py-0.5 text-xs text-destructive-foreground"
+                        onClick={async () => {
+                          await adminDeleteLiveSlide(item.id);
+                          await qc.invalidateQueries({ queryKey: ["screen-state"] });
+                          setMsg("Foto removida do ao vivo.");
+                        }}
+                      >
+                        Remover
+                      </button>
+                    </figure>
                   ))}
                 </div>
-                {!journeyGalleryQuery.data?.length && !journeyGalleryQuery.isLoading && (
-                  <p className="text-sm text-muted-foreground">Sem fotos ainda — carregue na secção Galeria.</p>
+                {!screenStateQuery.data?.live_slides?.length && !screenStateQuery.isLoading && (
+                  <p className="text-sm text-muted-foreground">Sem fotos ao vivo — carregue imagens acima.</p>
                 )}
               </section>
             )}
@@ -497,8 +518,8 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
             <section>
               <h2 className="mb-2 text-xl font-semibold">Galeria — A Jornada</h2>
               <p className="mb-4 text-sm text-muted-foreground">
-                Aparecem no final do convite (A Jornada), no slideshow do modo Ao vivo (/tela) e quando convidados enviam
-                selfie em &quot;Tirar foto&quot;.
+                Aparecem no convite digital (secção A Jornada). Selfies de convidados em &quot;Tirar foto&quot; entram aqui
+                automaticamente. Não alimentam o modo Ao vivo da tela — isso é na secção Tela gigante → Ao vivo.
               </p>
               <label className="glass mb-4 grid h-40 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground">
                 Carregar fotos da jornada
@@ -514,7 +535,6 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                       onClick={async () => {
                         await adminDeleteGalleryItem(item.id);
                         await qc.invalidateQueries({ queryKey: ["gallery"] });
-                        await qc.invalidateQueries({ queryKey: ["screen-state"] });
                         setMsg("Foto removida da galeria.");
                       }}
                     >
