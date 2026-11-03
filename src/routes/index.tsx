@@ -14,10 +14,10 @@ export const Route = createFileRoute("/")({
   validateSearch: (s: Record<string, unknown>): Search => ({ c: typeof s["c"] === "string" ? s["c"] : undefined }),
   head: () => ({
     meta: [
-      { title: "Graduação Dra Kayan — Convite" },
-      { name: "description", content: "Convite digital para a graduação da Dra Kayan." },
-      { property: "og:title", content: "Graduação Dra Kayan" },
-      { property: "og:description", content: "Você está convidado(a) para celebrar a graduação da Dra Kayan." },
+      { title: "Graduação Kayan & Orquídea — Convite" },
+      { name: "description", content: "Convite digital para a graduação de Kayan e Orquídea." },
+      { property: "og:title", content: "Graduação Kayan & Orquídea" },
+      { property: "og:description", content: "Você está convidado(a) para celebrar esta graduação." },
     ],
   }),
   component: Portal,
@@ -80,12 +80,21 @@ function Portal() {
   return (
     <main className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-hidden">
       <ThemeToggle />
-      <img src={hero} alt="Dra Kayan" width={864} height={1536} className={`absolute inset-0 h-full w-full object-cover transition-transform duration-700 ${opening ? "scale-110" : ""}`} />
+      <img
+        src={hero}
+        alt="MSc. Kayan e Dra. Orquídea"
+        width={864}
+        height={1536}
+        className={`absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 ${opening ? "scale-110" : ""}`}
+      />
       <div className="bg-veil absolute inset-0" />
       <div className="relative mt-auto flex flex-col items-center px-6 pb-10 text-center text-secondary-foreground">
         <p className="tracking-[0.4em] text-sm font-semibold text-gold-soft">{eventDate}</p>
-        <p className="mt-4 text-xs uppercase tracking-[0.5em] text-gold-soft/80">Graduada</p>
-        <h1 className="font-script text-gold-gradient text-7xl leading-tight">Dra Kayan</h1>
+        <p className="mt-4 text-xs uppercase tracking-[0.5em] text-gold-soft/80">Graduadas</p>
+        <div className="mt-2 flex w-full flex-col items-center gap-0 leading-none">
+          <h1 className="font-script-display text-gold-gradient text-[clamp(2.75rem,11vw,4.25rem)]">MSc. Kayan</h1>
+          <h1 className="font-script-display text-gold-gradient -mt-1 text-[clamp(2.75rem,11vw,4.25rem)]">Dra. Orquídea</h1>
+        </div>
         <ChevronDown className="mt-4 animate-bounce text-gold" />
         <button
           onClick={() => {

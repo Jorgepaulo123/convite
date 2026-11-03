@@ -113,7 +113,7 @@ function Convite() {
     <main className="relative mx-auto max-w-md pb-32">
       <ThemeToggle />
       <header className="relative h-[70vh] overflow-hidden rounded-b-[3rem]">
-        <img src={hero} alt="Dra Kayan" className="h-full w-full object-cover" />
+        <img src={hero} alt="MSc. Kayan e Dra. Orquídea" className="h-full w-full object-cover object-top" />
         <div className="bg-veil absolute inset-0" />
         <div className="absolute inset-x-0 bottom-8 text-center text-secondary-foreground">
           <p className="text-xs uppercase tracking-[0.4em] text-gold-soft">Bem-vindo(a)</p>
