@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import j2 from "@/assets/journey-2.jpg";
 import { DOCK_FELICITATIONS_COUNT, useTelaBrindes } from "@/hooks/useTelaBrindes";
 import { fetchRecentFelicitacoes, fetchScreenState, mediaUrl, type ScreenMode } from "@/lib/api";
-import { connectScreenWebSocket, type ScreenStatePayload } from "@/lib/screen-ws";
+import type { ScreenStatePayload } from "@/lib/screen-ws";
+import { useTelaRealtime } from "@/hooks/useTelaRealtime";
 
 export const Route = createFileRoute("/tela")({
   head: () => ({
@@ -123,22 +124,7 @@ function TelaStage({
     useTelaBrindes(felicitationPool);
   const enqueueRef = useRef(enqueue);
   enqueueRef.current = enqueue;
-  const [screenState, setScreenState] = useState<ScreenStatePayload | null>(initialState);
-  const [wsLive, setWsLive] = useState(false);
-
-  useEffect(() => {
-    return connectScreenWebSocket({
-      onToast: (t) => enqueueRef.current(t),
-      onState: (next) =>
-        setScreenState({
-          mode: next.mode ?? "live",
-          active_media: next.active_media ?? null,
-          live_slides: next.live_slides ?? [],
-        }),
-      onOpen: () => setWsLive(true),
-      onClose: () => setWsLive(false),
-    });
-  }, []);
+  const { screenState, wsLive } = useTelaRealtime(initialState, (t) => enqueueRef.current(t));
 
   useEffect(() => {
     if (!isIdle || docked.length === 0) return;
@@ -171,10 +157,12 @@ function TelaStage({
 
         <div className="absolute right-12 top-10 z-10 flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-5 py-2.5 shadow-gold">
           <span
-            className={`h-2.5 w-2.5 rounded-full ${wsLive ? "animate-pulse bg-primary" : "bg-muted-foreground"}`}
-            title={wsLive ? "Ligado" : "A reconectar"}
+            className={`h-2.5 w-2.5 rounded-full animate-pulse ${wsLive ? "bg-primary" : "bg-primary/80"}`}
+            title={wsLive ? "WebSocket + HTTP" : "Sincronização HTTP (~2s) — normal na Vercel"}
           />
-          <span className="text-sm font-medium uppercase tracking-[0.35em] text-gold-soft">Felicitações</span>
+          <span className="text-sm font-medium uppercase tracking-[0.35em] text-gold-soft">
+            {wsLive ? "Tempo real" : "Sincronização"}
+          </span>
         </div>
 
         <aside className="absolute right-8 top-1/2 z-10 flex w-[min(360px,24vw)] min-h-[400px] -translate-y-1/2 flex-col justify-center gap-3 pr-1">

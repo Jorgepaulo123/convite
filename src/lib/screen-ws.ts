@@ -41,10 +41,14 @@ export function connectScreenWebSocket(handlers: {
       }
     };
 
+    ws.onerror = () => {
+      ws?.close();
+    };
+
     ws.onclose = () => {
       handlers.onClose?.();
       if (pingTimer) clearInterval(pingTimer);
-      if (!closed) reconnectTimer = setTimeout(connect, 2000);
+      if (!closed) reconnectTimer = setTimeout(connect, 5000);
     };
   };
 
