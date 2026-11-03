@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Camera, Gift, MapPin, CheckCircle2, MessageCircleHeart, Images, CalendarDays, Armchair } from "lucide-react";
-import hero from "@/assets/Kayan-hero.jpg";
+import hero from "@/assets/Kayan-hero.jpeg";
 import j1 from "@/assets/journey-1.jpg";
 import j2 from "@/assets/journey-2.jpg";
 import { EVENT } from "@/lib/mock";

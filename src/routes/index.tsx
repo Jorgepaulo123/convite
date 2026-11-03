@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Lock, LockOpen, ChevronDown, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import hero from "@/assets/Kayan-hero.jpg";
+import hero from "@/assets/Kayan-hero.jpeg";
 import { EVENT } from "@/lib/mock";
 import { fetchEventInfo, fetchGuestByCode, verifyGuestCode, type Guest } from "@/lib/api";
 import { formatEventDate } from "@/lib/event-date";
