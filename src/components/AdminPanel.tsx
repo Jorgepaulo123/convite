@@ -21,14 +21,14 @@ import {
   adminListGuestPhotos,
   adminListGuests,
   adminSetScreenMode,
-  adminDeleteLiveSlide,
   adminUpdateGuest,
   adminUpdateProgramItem,
   adminUpdateEventInfo,
+  adminDeleteGalleryItem,
   adminUploadGallery,
-  adminUploadLiveSlide,
   adminUploadScreenMedia,
   fetchEventInfo,
+  fetchGallery,
   fetchProgram,
   fetchScreenState,
   mediaUrl,
@@ -87,6 +87,12 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     queryFn: adminListGuestPhotos,
     enabled: section === "gallery",
     refetchInterval: section === "gallery" ? 15000 : false,
+  });
+
+  const journeyGalleryQuery = useQuery({
+    queryKey: ["gallery"],
+    queryFn: fetchGallery,
+    enabled: section === "gallery" || section === "screen",
   });
 
   const programQuery = useQuery({
@@ -190,7 +196,9 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     setErr("");
     try {
       for (const f of Array.from(files)) await adminUploadGallery(f);
-      setMsg("Fotos da galeria carregadas.");
+      setMsg("Fotos carregadas — aparecem no convite (secção A Jornada).");
+      await qc.invalidateQueries({ queryKey: ["gallery"] });
+      await qc.invalidateQueries({ queryKey: ["screen-state"] });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro no upload");
     }
@@ -202,18 +210,6 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     try {
       for (const f of Array.from(files)) await adminUploadScreenMedia(f);
       setMsg("Media da tela carregada.");
-      qc.invalidateQueries({ queryKey: ["screen-state"] });
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Erro no upload");
-    }
-  };
-
-  const onLiveSlides = async (files: FileList | null) => {
-    if (!files?.length) return;
-    setErr("");
-    try {
-      for (const f of Array.from(files)) await adminUploadLiveSlide(f);
-      setMsg("Fotos da galeria ao vivo carregadas.");
       qc.invalidateQueries({ queryKey: ["screen-state"] });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro no upload");
@@ -245,8 +241,6 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
       setErr(e instanceof Error ? e.message : "Erro");
     }
   };
-
-  const liveSlides = screenStateQuery.data?.live_slides ?? [];
 
   const handleLogout = () => {
     logoutAdmin();
@@ -464,34 +458,27 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
 
             {screenPanel === "live" && (
               <section className="mt-8">
-                <h3 className="mb-1 text-lg font-semibold">Galeria ao vivo</h3>
+                <h3 className="mb-1 text-lg font-semibold">Fotos no fundo (Ao vivo)</h3>
                 <p className="mb-4 text-sm text-muted-foreground">
-                  Fotos que passam em sequência no fundo da tela enquanto o modo &quot;Ao vivo&quot; estiver activo.
+                  Usa a mesma galeria do convite (A Jornada): fotos que carregas no menu{" "}
+                  <button type="button" className="font-medium text-primary underline" onClick={() => setSection("gallery")}>
+                    Galeria
+                  </button>{" "}
+                  e selfies enviadas pelos convidados. Passam em sequência em /tela e aparecem no final do convite.
                 </p>
-                <label className="glass mb-4 block cursor-pointer rounded-2xl border-2 border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-                  Carregar fotos para a tela
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onLiveSlides(e.target.files)} />
-                </label>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {liveSlides.map((slide) => (
-                    <figure key={slide.id} className="glass relative overflow-hidden rounded-xl">
-                      <img src={mediaUrl(slide.url)} alt="" className="aspect-video w-full object-cover" loading="lazy" />
-                      <button
-                        type="button"
-                        className="absolute right-2 top-2 rounded-full bg-destructive/90 px-2 py-0.5 text-xs text-destructive-foreground"
-                        onClick={async () => {
-                          await adminDeleteLiveSlide(slide.id);
-                          qc.invalidateQueries({ queryKey: ["screen-state"] });
-                          setMsg("Foto removida da galeria ao vivo.");
-                        }}
-                      >
-                        Remover
-                      </button>
-                    </figure>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {(journeyGalleryQuery.data ?? []).slice(0, 8).map((item) => (
+                    <img
+                      key={item.id}
+                      src={mediaUrl(item.url)}
+                      alt=""
+                      className="aspect-[3/4] rounded-lg object-cover"
+                      loading="lazy"
+                    />
                   ))}
                 </div>
-                {!liveSlides.length && !screenStateQuery.isLoading && (
-                  <p className="text-sm text-muted-foreground">Ainda não há fotos. Carregue imagens acima.</p>
+                {!journeyGalleryQuery.data?.length && !journeyGalleryQuery.isLoading && (
+                  <p className="text-sm text-muted-foreground">Sem fotos ainda — carregue na secção Galeria.</p>
                 )}
               </section>
             )}
@@ -509,15 +496,43 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
           <div className="max-w-4xl space-y-10">
             <section>
               <h2 className="mb-2 text-xl font-semibold">Galeria — A Jornada</h2>
-              <p className="mb-4 text-sm text-muted-foreground">Fotos oficiais no convite dos convidados.</p>
-              <label className="glass grid h-40 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground">
+              <p className="mb-4 text-sm text-muted-foreground">
+                Aparecem no final do convite (A Jornada), no slideshow do modo Ao vivo (/tela) e quando convidados enviam
+                selfie em &quot;Tirar foto&quot;.
+              </p>
+              <label className="glass mb-4 grid h-40 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground">
                 Carregar fotos da jornada
                 <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onGallery(e.target.files)} />
               </label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                {(journeyGalleryQuery.data ?? []).map((item) => (
+                  <figure key={item.id} className="glass relative overflow-hidden rounded-xl">
+                    <img src={mediaUrl(item.url)} alt="" className="aspect-[3/4] w-full object-cover" loading="lazy" />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-2 rounded-full bg-destructive/90 px-2 py-0.5 text-xs text-destructive-foreground"
+                      onClick={async () => {
+                        await adminDeleteGalleryItem(item.id);
+                        await qc.invalidateQueries({ queryKey: ["gallery"] });
+                        await qc.invalidateQueries({ queryKey: ["screen-state"] });
+                        setMsg("Foto removida da galeria.");
+                      }}
+                    >
+                      Remover
+                    </button>
+                  </figure>
+                ))}
+              </div>
+              {!journeyGalleryQuery.data?.length && !journeyGalleryQuery.isLoading && (
+                <p className="text-sm text-muted-foreground">Ainda não há fotos. Carregue imagens acima.</p>
+              )}
             </section>
             <section>
-              <h2 className="mb-2 text-xl font-semibold">Fotos enviadas pelos convidados</h2>
-              <p className="mb-4 text-sm text-muted-foreground">Guardadas automaticamente quando enviam pela app.</p>
+              <h2 className="mb-2 text-xl font-semibold">Selfies dos convidados</h2>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Cópia de referência (com nome). Cada envio entra automaticamente na galeria acima — já não vai só para a
+                tela em brinde.
+              </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                 {(guestPhotosQuery.data ?? []).map((p) => (
                   <figure key={p.id} className="glass overflow-hidden rounded-xl">

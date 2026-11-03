@@ -104,10 +104,10 @@ function Convite() {
     );
   }
 
-  const galleryUrls =
-    galleryQuery.data && galleryQuery.data.length > 0
-      ? galleryQuery.data.map((item) => mediaUrl(item.url))
-      : fallbackGallery.map((g) => g);
+  const journeyPhotos = galleryQuery.data ?? [];
+  const hasJourneyGallery = journeyPhotos.length > 0;
+  const usePlaceholderGallery =
+    !galleryQuery.isLoading && !galleryQuery.isError && !hasJourneyGallery;
 
   return (
     <main className="relative mx-auto max-w-md pb-32">
@@ -166,11 +166,29 @@ function Convite() {
 
       <Section id="galeria" title="A Jornada">
         <p className="mb-4 text-sm text-muted-foreground">Momentos históricos da vida estudantil</p>
-        <div className="grid grid-cols-3 gap-2">
-          {galleryUrls.map((g, i) => (
-            <img key={i} src={g} alt="" loading="lazy" className="aspect-[3/4] w-full rounded-xl object-cover" />
-          ))}
-        </div>
+        {galleryQuery.isLoading ? (
+          <p className="text-sm text-muted-foreground">A carregar galeria…</p>
+        ) : hasJourneyGallery ? (
+          <div className="grid grid-cols-3 gap-2">
+            {journeyPhotos.map((item) => (
+              <img
+                key={item.id}
+                src={mediaUrl(item.url)}
+                alt=""
+                loading="lazy"
+                className="aspect-[3/4] w-full rounded-xl object-cover"
+              />
+            ))}
+          </div>
+        ) : usePlaceholderGallery ? (
+          <div className="grid grid-cols-3 gap-2">
+            {fallbackGallery.map((g, i) => (
+              <img key={i} src={g} alt="" loading="lazy" className="aspect-[3/4] w-full rounded-xl object-cover" />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">A galeria será actualizada em breve.</p>
+        )}
       </Section>
 
       <Link to="/convite/foto" search={{ c: code }} aria-label="Tirar foto" className="bg-gold-gradient animate-pulse-ring fixed bottom-24 right-5 z-40 grid h-14 w-14 place-items-center rounded-full text-primary-foreground">

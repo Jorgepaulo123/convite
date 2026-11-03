@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? "";
+import { apiUrl } from "@/lib/api-base";
 
 const SESSION_KEY = "Kayan_admin_session";
 const API_KEY_STORAGE = "Kayan_admin_key";
@@ -15,7 +15,7 @@ export function getAdminApiKey(): string | null {
 
 export async function loginAdmin(password: string): Promise<{ ok: true } | { ok: false; message: string }> {
   try {
-    const res = await fetch(`${API_BASE}/api/admin/login`, {
+    const res = await fetch(apiUrl("/api/admin/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password }),
@@ -27,7 +27,8 @@ export async function loginAdmin(password: string): Promise<{ ok: true } | { ok:
         if (body.detail) message = body.detail;
       } catch {
         if (res.status === 0 || res.type === "error") {
-          message = "Não foi possível ligar à API. Inicie o servidor FastAPI (porta 8000).";
+          message =
+            "Não foi possível ligar à API. Verifique o deploy (Vercel + VPS) ou o proxy local (npm run dev).";
         }
       }
       return { ok: false, message };
@@ -39,7 +40,8 @@ export async function loginAdmin(password: string): Promise<{ ok: true } | { ok:
   } catch {
     return {
       ok: false,
-      message: "Não foi possível ligar à API. Execute: cd backend && .venv\\Scripts\\uvicorn app.main:app --reload --port 8000",
+      message:
+        "Não foi possível ligar à API. Em dev: npm run dev (proxy para a VPS). API local: VITE_DEV_API_TARGET=http://127.0.0.1:8000",
     };
   }
 }

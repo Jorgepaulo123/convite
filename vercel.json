@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://84.247.136.129/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "http://84.247.136.129/uploads/:path*"
+    }
+  ]
+}

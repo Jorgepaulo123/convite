@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build / Nitro / Vite
+dist/
+.output/
+.vercel/
+.nitro/
+.vinxi/
+.tanstack/
+*.local
+
+# Env (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Logs & debug
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS & editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test / coverage
+coverage/
+
+# Python (if any local backend copy)
+.venv/
+__pycache__/
+*.pyc
+data/
+uploads/

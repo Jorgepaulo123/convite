@@ -32,8 +32,7 @@ export type ScreenToast =
   | { kind: "message"; id: number; guest_name: string; message: string };
 
 import { getAdminApiKey } from "@/lib/admin-auth";
-
-const API_BASE = import.meta.env.VITE_API_URL ?? "";
+import { apiUrl } from "@/lib/api-base";
 
 function adminHeaders(): HeadersInit {
   const key = getAdminApiKey();
@@ -58,18 +57,18 @@ async function parseJson<T>(res: Response): Promise<T> {
 
 export function mediaUrl(path: string) {
   if (path.startsWith("http")) return path;
-  return `${API_BASE}${path}`;
+  return apiUrl(path);
 }
 
 export async function fetchGuestByCode(code: string): Promise<Guest | undefined> {
   if (!/^\d{6}$/.test(code)) return undefined;
-  const res = await fetch(`${API_BASE}/api/guests/by-code/${code}`);
+  const res = await fetch(apiUrl(`/api/guests/by-code/${code}`));
   if (res.status === 404) return undefined;
   return parseJson<Guest>(res);
 }
 
 export async function verifyGuestCode(code: string): Promise<Guest> {
-  const res = await fetch(`${API_BASE}/api/guests/verify`, {
+  const res = await fetch(apiUrl(`/api/guests/verify`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code }),
@@ -78,7 +77,7 @@ export async function verifyGuestCode(code: string): Promise<Guest> {
 }
 
 export async function submitRsvp(code: string, status: "yes" | "no") {
-  const res = await fetch(`${API_BASE}/api/rsvp`, {
+  const res = await fetch(apiUrl(`/api/rsvp`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code, status }),
@@ -87,7 +86,7 @@ export async function submitRsvp(code: string, status: "yes" | "no") {
 }
 
 export async function ackPresent(code: string) {
-  const res = await fetch(`${API_BASE}/api/present/ack`, {
+  const res = await fetch(apiUrl(`/api/present/ack`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code }),
@@ -96,7 +95,7 @@ export async function ackPresent(code: string) {
 }
 
 export async function sendFelicitation(code: string, message: string) {
-  const res = await fetch(`${API_BASE}/api/felicitacoes`, {
+  const res = await fetch(apiUrl(`/api/felicitacoes`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code, message }),
@@ -108,22 +107,22 @@ export async function uploadGuestPhoto(code: string, file: File) {
   const fd = new FormData();
   fd.append("code", code);
   fd.append("file", file);
-  const res = await fetch(`${API_BASE}/api/guest-photos`, { method: "POST", body: fd });
+  const res = await fetch(apiUrl(`/api/guest-photos`), { method: "POST", body: fd });
   return parseJson<{ ok: boolean; id: number; url: string }>(res);
 }
 
 export async function fetchGallery(): Promise<GalleryItem[]> {
-  const res = await fetch(`${API_BASE}/api/gallery`);
+  const res = await fetch(apiUrl(`/api/gallery`));
   return parseJson<GalleryItem[]>(res);
 }
 
 export async function adminListGuests(): Promise<GuestAdmin[]> {
-  const res = await fetch(`${API_BASE}/api/admin/guests`, { headers: adminHeaders() });
+  const res = await fetch(apiUrl(`/api/admin/guests`), { headers: adminHeaders() });
   return parseJson<GuestAdmin[]>(res);
 }
 
 export async function adminCreateGuest(name: string, contact: string, table?: string) {
-  const res = await fetch(`${API_BASE}/api/admin/guests`, {
+  const res = await fetch(apiUrl(`/api/admin/guests`), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify({ name, contact, table: table || null }),
@@ -135,7 +134,7 @@ export async function adminUpdateGuest(
   id: number,
   patch: { name?: string; contact?: string; table?: string | null },
 ) {
-  const res = await fetch(`${API_BASE}/api/admin/guests/${id}`, {
+  const res = await fetch(apiUrl(`/api/admin/guests/${id}`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify(patch),
@@ -144,7 +143,7 @@ export async function adminUpdateGuest(
 }
 
 export async function adminDeleteGuest(id: number) {
-  const res = await fetch(`${API_BASE}/api/admin/guests/${id}`, {
+  const res = await fetch(apiUrl(`/api/admin/guests/${id}`), {
     method: "DELETE",
     headers: adminHeaders(),
   });
@@ -154,7 +153,7 @@ export async function adminDeleteGuest(id: number) {
 export async function adminUploadGallery(file: File) {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch(`${API_BASE}/api/admin/gallery`, {
+  const res = await fetch(apiUrl(`/api/admin/gallery`), {
     method: "POST",
     headers: adminHeaders(),
     body: fd,
@@ -162,13 +161,21 @@ export async function adminUploadGallery(file: File) {
   return parseJson<GalleryItem>(res);
 }
 
+export async function adminDeleteGalleryItem(id: number) {
+  const res = await fetch(apiUrl(`/api/admin/gallery/${id}`), {
+    method: "DELETE",
+    headers: adminHeaders(),
+  });
+  return parseJson<void>(res);
+}
+
 export async function adminListFelicitacoes() {
-  const res = await fetch(`${API_BASE}/api/admin/felicitacoes`, { headers: adminHeaders() });
+  const res = await fetch(apiUrl(`/api/admin/felicitacoes`), { headers: adminHeaders() });
   return parseJson<{ id: number; guest_name: string; message: string; created_at: string }[]>(res);
 }
 
 export async function adminSetScreenMode(mode: ScreenMode) {
-  const res = await fetch(`${API_BASE}/api/admin/screen/mode/${mode}`, {
+  const res = await fetch(apiUrl(`/api/admin/screen/mode/${mode}`), {
     method: "PATCH",
     headers: adminHeaders(),
   });
@@ -178,7 +185,7 @@ export async function adminSetScreenMode(mode: ScreenMode) {
 export async function adminUploadLiveSlide(file: File) {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch(`${API_BASE}/api/admin/screen/live-slides`, {
+  const res = await fetch(apiUrl(`/api/admin/screen/live-slides`), {
     method: "POST",
     headers: adminHeaders(),
     body: fd,
@@ -187,7 +194,7 @@ export async function adminUploadLiveSlide(file: File) {
 }
 
 export async function adminDeleteLiveSlide(id: number) {
-  const res = await fetch(`${API_BASE}/api/admin/screen/live-slides/${id}`, {
+  const res = await fetch(apiUrl(`/api/admin/screen/live-slides/${id}`), {
     method: "DELETE",
     headers: adminHeaders(),
   });
@@ -197,7 +204,7 @@ export async function adminDeleteLiveSlide(id: number) {
 export async function adminUploadScreenMedia(file: File) {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch(`${API_BASE}/api/admin/screen/media`, {
+  const res = await fetch(apiUrl(`/api/admin/screen/media`), {
     method: "POST",
     headers: adminHeaders(),
     body: fd,
@@ -206,17 +213,17 @@ export async function adminUploadScreenMedia(file: File) {
 }
 
 export async function fetchProgram(): Promise<ProgramItem[]> {
-  const res = await fetch(`${API_BASE}/api/program`);
+  const res = await fetch(apiUrl(`/api/program`));
   return parseJson<ProgramItem[]>(res);
 }
 
 export async function fetchEventInfo(): Promise<EventInfo> {
-  const res = await fetch(`${API_BASE}/api/event`);
+  const res = await fetch(apiUrl(`/api/event`));
   return parseJson<EventInfo>(res);
 }
 
 export async function adminUpdateEventInfo(event_date: string) {
-  const res = await fetch(`${API_BASE}/api/admin/event`, {
+  const res = await fetch(apiUrl(`/api/admin/event`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify({ event_date }),
@@ -225,7 +232,7 @@ export async function adminUpdateEventInfo(event_date: string) {
 }
 
 export async function adminCreateProgramItem(title: string, time: string) {
-  const res = await fetch(`${API_BASE}/api/admin/program`, {
+  const res = await fetch(apiUrl(`/api/admin/program`), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify({ title, time }),
@@ -237,7 +244,7 @@ export async function adminUpdateProgramItem(
   id: number,
   patch: { title?: string; time?: string; sort_order?: number },
 ) {
-  const res = await fetch(`${API_BASE}/api/admin/program/${id}`, {
+  const res = await fetch(apiUrl(`/api/admin/program/${id}`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify(patch),
@@ -246,7 +253,7 @@ export async function adminUpdateProgramItem(
 }
 
 export async function adminDeleteProgramItem(id: number) {
-  const res = await fetch(`${API_BASE}/api/admin/program/${id}`, {
+  const res = await fetch(apiUrl(`/api/admin/program/${id}`), {
     method: "DELETE",
     headers: adminHeaders(),
   });
@@ -254,22 +261,22 @@ export async function adminDeleteProgramItem(id: number) {
 }
 
 export async function fetchRecentFelicitacoes(limit = 3) {
-  const res = await fetch(`${API_BASE}/api/screen/recent-felicitacoes?limit=${limit}`);
+  const res = await fetch(apiUrl(`/api/screen/recent-felicitacoes?limit=${limit}`));
   return parseJson<{ id: number; guest_name: string; message: string }[]>(res);
 }
 
 export async function adminListGuestPhotos() {
-  const res = await fetch(`${API_BASE}/api/admin/guest-photos`, { headers: adminHeaders() });
+  const res = await fetch(apiUrl(`/api/admin/guest-photos`), { headers: adminHeaders() });
   return parseJson<{ id: number; guest_name: string; url: string; created_at: string }[]>(res);
 }
 
 export async function fetchScreenState() {
-  const res = await fetch(`${API_BASE}/api/screen/state`);
+  const res = await fetch(apiUrl(`/api/screen/state`));
   return parseJson<ScreenState>(res);
 }
 
 export async function fetchScreenToast(): Promise<ScreenToast | null> {
-  const res = await fetch(`${API_BASE}/api/screen/next-toast`);
+  const res = await fetch(apiUrl(`/api/screen/next-toast`));
   if (res.status === 204) return null;
   const data = await res.json();
   if (data === null) return null;

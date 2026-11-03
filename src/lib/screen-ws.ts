@@ -1,4 +1,5 @@
 import type { ScreenLiveSlide, ScreenMode, ScreenToast } from "@/lib/api";
+import { getScreenWsOrigin } from "@/lib/api-base";
 
 export type ScreenStatePayload = {
   mode: ScreenMode;
@@ -10,13 +11,6 @@ export type ScreenWsMessage =
   | { type: "toast"; payload: ScreenToast }
   | { type: "state"; payload: ScreenStatePayload }
   | { type: "pong" };
-
-function wsBase(): string {
-  const env = import.meta.env.VITE_API_URL as string | undefined;
-  if (env) return env.replace(/^http/, "ws");
-  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${proto}//${window.location.host}`;
-}
 
 export function connectScreenWebSocket(handlers: {
   onToast: (toast: ScreenToast) => void;
@@ -30,7 +24,7 @@ export function connectScreenWebSocket(handlers: {
   let closed = false;
 
   const connect = () => {
-    ws = new WebSocket(`${wsBase()}/api/ws/screen`);
+    ws = new WebSocket(`${getScreenWsOrigin()}/api/ws/screen`);
 
     ws.onopen = () => {
       handlers.onOpen?.();

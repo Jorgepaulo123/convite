@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Camera } from "lucide-react";
 import { SubPage, validateC } from "@/components/SubPage";
@@ -9,9 +10,9 @@ export const Route = createFileRoute("/convite_/foto")({
   head: () => ({
     meta: [
       { title: "Tirar foto — Graduação Dra Kayan" },
-      { name: "description", content: "Tire uma foto e envie para a tela gigante." },
+      { name: "description", content: "Tire uma selfie para a galeria do convite." },
       { property: "og:title", content: "Tirar foto — Dra Kayan" },
-      { property: "og:description", content: "Tire uma foto e envie para a tela gigante." },
+      { property: "og:description", content: "Partilhe um momento na galeria A Jornada." },
     ],
   }),
   component: Page,
@@ -25,6 +26,7 @@ function Page() {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const qc = useQueryClient();
 
   const send = async () => {
     if (!code || !file) return;
@@ -32,6 +34,7 @@ function Page() {
     setErr("");
     try {
       await uploadGuestPhoto(code, file);
+      await qc.invalidateQueries({ queryKey: ["gallery"] });
       setSent(true);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro ao enviar.");
@@ -43,7 +46,7 @@ function Page() {
   return (
     <SubPage title="Foto" c={c}>
       {sent ? (
-        <p className="glass rounded-2xl p-6 text-primary">Foto enviada para a tela gigante! 📸</p>
+        <p className="glass rounded-2xl p-6 text-primary">Selfie adicionada à galeria A Jornada! 📸</p>
       ) : (
         <>
           <label className="glass grid aspect-[3/4] w-full cursor-pointer place-items-center overflow-hidden rounded-3xl">
@@ -71,7 +74,7 @@ function Page() {
           </label>
           {err && <p className="mt-3 text-sm text-destructive">{err}</p>}
           <button disabled={!file || busy || !code} onClick={send} className="bg-gold-gradient mt-4 w-full rounded-full py-3 font-semibold text-primary-foreground shadow-gold disabled:opacity-50">
-            {busy ? "A enviar…" : "Enviar para a tela"}
+            {busy ? "A enviar…" : "Enviar para a galeria"}
           </button>
         </>
       )}
