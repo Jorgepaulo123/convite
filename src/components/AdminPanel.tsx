@@ -10,6 +10,7 @@ import {
   LogOut,
   LayoutDashboard,
   CalendarDays,
+  ClipboardCheck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -34,6 +35,7 @@ import {
   fetchProgram,
   fetchScreenState,
   mediaUrl,
+  type GuestAdmin,
   type ScreenMode,
 } from "@/lib/api";
 import { logoutAdmin } from "@/lib/admin-auth";
@@ -47,10 +49,17 @@ const MODES: { id: ScreenMode; label: string; icon: typeof Video }[] = [
   { id: "brindes", label: "Brindes", icon: MessageSquare },
 ];
 
-type Section = "guests" | "program" | "screen" | "gallery" | "messages";
+type Section = "guests" | "presence" | "program" | "screen" | "gallery" | "messages";
+
+const RSVP_LABEL: Record<NonNullable<GuestAdmin["rsvp_status"]>, string> = {
+  yes: "Confirmado — vai",
+  no: "Não vai",
+  pending: "Por confirmar",
+};
 
 const NAV: { id: Section; label: string; icon: typeof Users }[] = [
   { id: "guests", label: "Convidados", icon: Users },
+  { id: "presence", label: "Presenças", icon: ClipboardCheck },
   { id: "program", label: "Programa", icon: CalendarDays },
   { id: "screen", label: "Tela gigante", icon: MonitorPlay },
   { id: "gallery", label: "Galeria", icon: Upload },
@@ -60,6 +69,43 @@ const NAV: { id: Section; label: string; icon: typeof Users }[] = [
 type AdminPanelProps = {
   onLogout: () => void;
 };
+
+type GuestStats = { total: number; presentes: number; emFalta: number };
+
+function GuestStatsCards({ total, presentes, emFalta }: GuestStats) {
+  return (
+    <div className="mb-8 grid gap-4 sm:grid-cols-3">
+      <div className="glass rounded-2xl p-5 text-center">
+        <p className="text-3xl font-semibold tabular-nums text-foreground">{total}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Total convidados</p>
+      </div>
+      <div className="glass rounded-2xl p-5 text-center ring-1 ring-primary/30">
+        <p className="text-3xl font-semibold tabular-nums text-primary">{presentes}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Presentes (confirmados)</p>
+      </div>
+      <div className="glass rounded-2xl p-5 text-center">
+        <p className="text-3xl font-semibold tabular-nums text-foreground">{emFalta}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Em falta</p>
+      </div>
+    </div>
+  );
+}
+
+function RsvpBadge({ status }: { status: NonNullable<GuestAdmin["rsvp_status"]> }) {
+  return (
+    <span
+      className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${
+        status === "yes"
+          ? "bg-primary/15 text-primary"
+          : status === "no"
+            ? "bg-destructive/15 text-destructive"
+            : "bg-muted text-muted-foreground"
+      }`}
+    >
+      {RSVP_LABEL[status]}
+    </span>
+  );
+}
 
 export function AdminPanel({ onLogout }: AdminPanelProps) {
   const qc = useQueryClient();
@@ -72,11 +118,17 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
   const [screenPanel, setScreenPanel] = useState<ScreenMode | null>(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [editingGuestId, setEditingGuestId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editContact, setEditContact] = useState("");
+  const [editTable, setEditTable] = useState("");
+  const [savingGuest, setSavingGuest] = useState(false);
 
   const guestsQuery = useQuery({
     queryKey: ["admin-guests"],
     queryFn: adminListGuests,
     retry: false,
+    refetchInterval: section === "presence" ? 10000 : false,
   });
 
   const felicQuery = useQuery({
@@ -150,6 +202,14 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     });
   }, [draftEventDate, draftProgram, eventQuery.data?.event_date, programQuery.data]);
 
+  const presenceStats = useMemo(() => {
+    const guests = guestsQuery.data ?? [];
+    const total = guests.length;
+    const presentes = guests.filter((g) => g.rsvp_status === "yes").length;
+    const emFalta = total - presentes;
+    return { total, presentes, emFalta };
+  }, [guestsQuery.data]);
+
   const saveProgramSection = async () => {
     setErr("");
     setSavingProgram(true);
@@ -174,6 +234,44 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
       setErr(e instanceof Error ? e.message : "Erro ao guardar");
     } finally {
       setSavingProgram(false);
+    }
+  };
+
+  const startEditGuest = (g: GuestAdmin) => {
+    setEditingGuestId(g.id);
+    setEditName(g.name);
+    setEditContact(g.contact);
+    setEditTable(g.table ?? "");
+    setErr("");
+    setMsg("");
+  };
+
+  const cancelEditGuest = () => {
+    setEditingGuestId(null);
+    setEditName("");
+    setEditContact("");
+    setEditTable("");
+  };
+
+  const saveEditGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingGuestId == null) return;
+    setSavingGuest(true);
+    setErr("");
+    setMsg("");
+    try {
+      await adminUpdateGuest(editingGuestId, {
+        name: editName.trim(),
+        contact: editContact.trim(),
+        table: editTable.trim() || null,
+      });
+      setMsg("Convidado actualizado.");
+      cancelEditGuest();
+      qc.invalidateQueries({ queryKey: ["admin-guests"] });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erro ao guardar");
+    } finally {
+      setSavingGuest(false);
     }
   };
 
@@ -306,43 +404,135 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
         {msg && <p className="mb-4 text-sm text-primary">{msg}</p>}
         {err && <p className="mb-4 text-sm text-destructive">{err}</p>}
 
+        {section === "presence" && (
+          <div className="max-w-3xl">
+            <h2 className="mb-2 text-xl font-semibold">Presenças</h2>
+            <p className="mb-6 text-sm text-muted-foreground">
+              Respostas da página «Confirmar presença» no convite. «Presentes» = confirmaram que vão; «Em falta» inclui quem
+              ainda não respondeu e quem disse que não pode.
+            </p>
+            <GuestStatsCards {...presenceStats} />
+            <p className="mb-3 text-sm font-medium">Lista de convidados</p>
+            <div className="glass overflow-hidden rounded-2xl">
+              <div className="hidden border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground sm:grid sm:grid-cols-[1fr_1fr_1fr_auto] sm:gap-2">
+                <span>Nome</span>
+                <span>Mesa</span>
+                <span>Telemóvel</span>
+                <span className="text-right">Presença</span>
+              </div>
+              <ul className="max-h-[55vh] divide-y divide-border overflow-y-auto text-sm">
+                {(guestsQuery.data ?? []).map((g) => {
+                  const status = g.rsvp_status ?? "pending";
+                  return (
+                    <li
+                      key={g.id}
+                      className="flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-center sm:gap-2"
+                    >
+                      <p className="font-medium">{g.name}</p>
+                      <p className="text-muted-foreground sm:text-foreground">{g.table ?? "—"}</p>
+                      <p className="font-mono text-xs tracking-wide text-primary sm:text-sm">{g.code}</p>
+                      <div className="sm:text-right">
+                        <RsvpBadge status={status} />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              {!guestsQuery.data?.length && !guestsQuery.isLoading && (
+                <p className="px-4 py-6 text-muted-foreground">Ainda não há convidados registados.</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {section === "guests" && (
           <div className="max-w-2xl">
-            <h2 className="mb-6 text-xl font-semibold">Convidados & mesas</h2>
+            <h2 className="mb-2 text-xl font-semibold">Convidados & mesas</h2>
+            <p className="mb-6 text-sm text-muted-foreground">Gerir convidados, mesas e contactos de acesso ao convite.</p>
+            <GuestStatsCards {...presenceStats} />
+            <p className="mb-3 text-sm font-medium">Lista de convidados</p>
             <ul className="mb-6 max-h-[50vh] space-y-2 overflow-y-auto text-sm">
-              {(guestsQuery.data ?? []).map((g) => (
-                <li key={g.id} className="glass rounded-xl px-4 py-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium">{g.name}</p>
-                      <p className="font-mono text-sm tracking-wide text-primary">
-                        Telemóvel (acesso ao convite): {g.code}
-                      </p>
+              {(guestsQuery.data ?? []).map((g) =>
+                editingGuestId === g.id ? (
+                  <li key={g.id} className="glass rounded-xl p-4">
+                    <form onSubmit={saveEditGuest} className="space-y-3">
+                      <p className="text-sm font-medium">Editar convidado</p>
+                      <input
+                        required
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Nome"
+                        className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+                      />
+                      <input
+                        required
+                        value={editContact}
+                        onChange={(e) => setEditContact(e.target.value)}
+                        placeholder="Telemóvel"
+                        inputMode="tel"
+                        className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+                      />
+                      <input
+                        value={editTable}
+                        onChange={(e) => setEditTable(e.target.value)}
+                        placeholder="Mesa (opcional)"
+                        className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="submit"
+                          disabled={savingGuest}
+                          className="bg-gold-gradient flex-1 rounded-full py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                        >
+                          {savingGuest ? "A guardar…" : "Guardar"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEditGuest}
+                          className="glass flex-1 rounded-full py-2 text-sm font-medium"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  </li>
+                ) : (
+                  <li key={g.id} className="glass rounded-xl px-4 py-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{g.name}</p>
+                        <p className="font-mono text-sm tracking-wide text-primary">Acesso: {g.code}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Contacto: {g.contact}
+                          {g.table ? ` · ${g.table}` : ""}
+                        </p>
+                        <div className="mt-2">
+                          <RsvpBadge status={g.rsvp_status ?? "pending"} />
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-1">
+                        <button type="button" className="text-xs text-primary" onClick={() => startEditGuest(g)}>
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="text-xs text-destructive"
+                          onClick={async () => {
+                            if (editingGuestId === g.id) cancelEditGuest();
+                            await adminDeleteGuest(g.id);
+                            qc.invalidateQueries({ queryKey: ["admin-guests"] });
+                          }}
+                        >
+                          Remover
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      className="text-xs text-destructive"
-                      onClick={async () => {
-                        await adminDeleteGuest(g.id);
-                        qc.invalidateQueries({ queryKey: ["admin-guests"] });
-                      }}
-                    >
-                      Remover
-                    </button>
-                  </div>
-                  <input
-                    defaultValue={g.table ?? ""}
-                    placeholder="Mesa (ex: Mesa 3)"
-                    className="mt-2 w-full rounded-lg border border-input bg-transparent px-2 py-1.5 text-xs"
-                    onBlur={async (e) => {
-                      const v = e.target.value.trim();
-                      if (v === (g.table ?? "")) return;
-                      await adminUpdateGuest(g.id, { table: v || null });
-                      qc.invalidateQueries({ queryKey: ["admin-guests"] });
-                    }}
-                  />
-                </li>
-              ))}
+                  </li>
+                ),
+              )}
+              {!guestsQuery.data?.length && !guestsQuery.isLoading && (
+                <p className="text-muted-foreground">Ainda não há convidados.</p>
+              )}
             </ul>
             <form onSubmit={addGuest} className="glass space-y-3 rounded-2xl p-5">
               <p className="text-sm font-medium">Novo convidado</p>
