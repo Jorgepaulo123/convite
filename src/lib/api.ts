@@ -33,6 +33,7 @@ export type ScreenToast =
 
 import { getAdminApiKey } from "@/lib/admin-auth";
 import { apiUrl } from "@/lib/api-base";
+import { isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 
 function adminHeaders(): HeadersInit {
   const key = getAdminApiKey();
@@ -61,17 +62,19 @@ export function mediaUrl(path: string) {
 }
 
 export async function fetchGuestByCode(code: string): Promise<Guest | undefined> {
-  if (!/^\d{6}$/.test(code)) return undefined;
-  const res = await fetch(apiUrl(`/api/guests/by-code/${code}`));
+  const normalized = normalizeGuestCode(code);
+  if (!isValidGuestCode(normalized)) return undefined;
+  const res = await fetch(apiUrl(`/api/guests/by-code/${normalized}`));
   if (res.status === 404) return undefined;
   return parseJson<Guest>(res);
 }
 
 export async function verifyGuestCode(code: string): Promise<Guest> {
+  const normalized = normalizeGuestCode(code);
   const res = await fetch(apiUrl(`/api/guests/verify`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code }),
+    body: JSON.stringify({ code: normalized }),
   });
   return parseJson<Guest>(res);
 }

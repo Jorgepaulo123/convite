@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
 import { SubPage, validateC } from "@/components/SubPage";
 import { ackPresent } from "@/lib/api";
+import { isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 import { GIFT_RECIPIENTS, type GiftRecipientId } from "@/lib/mock";
 
 export const Route = createFileRoute("/convite_/presente")({
@@ -42,7 +43,7 @@ function PaymentDetails({ recipientId }: { recipientId: GiftRecipientId }) {
 
 function Page() {
   const { c } = Route.useSearch();
-  const code = c && /^\d{6}$/.test(c) ? c : undefined;
+  const code = c && isValidGuestCode(c) ? normalizeGuestCode(c) : undefined;
   const [recipient, setRecipient] = useState<GiftRecipientId | null>(null);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);

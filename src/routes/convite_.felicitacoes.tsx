@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SubPage, validateC } from "@/components/SubPage";
 import { sendFelicitation } from "@/lib/api";
+import { isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 
 export const Route = createFileRoute("/convite_/felicitacoes")({
   validateSearch: validateC,
@@ -21,7 +22,7 @@ const field = "glass w-full rounded-2xl p-4 text-sm outline-none placeholder:tex
 
 function Page() {
   const { c } = Route.useSearch();
-  const code = c && /^\d{6}$/.test(c) ? c : undefined;
+  const code = c && isValidGuestCode(c) ? normalizeGuestCode(c) : undefined;
   const [message, setMessage] = useState("");
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);

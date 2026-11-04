@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Camera } from "lucide-react";
 import { SubPage, validateC } from "@/components/SubPage";
 import { uploadGuestPhoto } from "@/lib/api";
+import { isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 
 export const Route = createFileRoute("/convite_/foto")({
   validateSearch: validateC,
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/convite_/foto")({
 
 function Page() {
   const { c } = Route.useSearch();
-  const code = c && /^\d{6}$/.test(c) ? c : undefined;
+  const code = c && isValidGuestCode(c) ? normalizeGuestCode(c) : undefined;
   const [file, setFile] = useState<File>();
   const [preview, setPreview] = useState<string>();
   const [sent, setSent] = useState(false);

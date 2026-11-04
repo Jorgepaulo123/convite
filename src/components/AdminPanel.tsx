@@ -186,7 +186,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
       setName("");
       setContact("");
       setTable("");
-      setMsg(`Convidado criado. Código: ${g.code}`);
+      setMsg(`Convidado criado. Número de acesso: ${g.code}`);
       qc.invalidateQueries({ queryKey: ["admin-guests"] });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro");

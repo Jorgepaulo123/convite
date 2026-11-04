@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { SubPage, validateC } from "@/components/SubPage";
 import { fetchGuestByCode, submitRsvp } from "@/lib/api";
+import { isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 
 export const Route = createFileRoute("/convite_/presenca")({
   validateSearch: validateC,
@@ -21,7 +22,7 @@ const btn = "bg-gold-gradient mt-4 w-full rounded-full py-3 font-semibold text-p
 
 function Page() {
   const { c } = Route.useSearch();
-  const code = c && /^\d{6}$/.test(c) ? c : undefined;
+  const code = c && isValidGuestCode(c) ? normalizeGuestCode(c) : undefined;
   const guestQuery = useQuery({
     queryKey: ["guest", code],
     queryFn: () => fetchGuestByCode(code!),

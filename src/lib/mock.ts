@@ -3,11 +3,10 @@ export const EVENT = {
   graduate: "Dra Kayan",
   date: "28.11.2026",
   dateLong: "Sábado, 28 de Novembro de 2026",
-  venue: "Residencial Bendiak",
-  /** Centro do mapa embebido (coordenadas Google Maps). */
-  mapQuery: "-13.3069805,35.2446737",
+  venue: "Alojamento Bendiak — Bendiak Village",
+  mapQuery: "-13.3427738,35.2871901",
   mapUrl:
-    "https://www.google.com/maps/place/Residencial+Bendiak/@-13.3069753,35.2420988,788m/data=!3m2!1e3!4b1!4m6!3m5!1s0x18e0f531713c1b4d:0x9a720ad1671dd802!8m2!3d-13.3069805!4d35.2446737!16s%2Fg%2F11c30sjkdg",
+    "https://www.google.com/maps/place/Alojamento+Bendiak/@-13.3248346,35.2453322,6306m/data=!3m1!1e3!4m10!1m2!2m1!1sBendiak!3m6!1s0x18e08beaf08b0ad5:0x53f3dc3b72bf7790!8m2!3d-13.3427738!4d35.2871901!16s%2Fg%2F11sg_06y_l",
   agenda: [
     { title: "Cerimónia", time: "16H00" },
     { title: "Cocktail", time: "18H00" },

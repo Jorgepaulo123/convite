@@ -7,6 +7,7 @@ import j2 from "@/assets/journey-2.jpg";
 import { EVENT } from "@/lib/mock";
 import { fetchEventInfo, fetchGallery, fetchGuestByCode, fetchProgram, mediaUrl } from "@/lib/api";
 import { formatEventDate } from "@/lib/event-date";
+import { isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Search = { c?: string | undefined };
@@ -38,7 +39,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 
 function Convite() {
   const { c } = Route.useSearch();
-  const code = c && /^\d{6}$/.test(c) ? c : undefined;
+  const code = c && isValidGuestCode(c) ? normalizeGuestCode(c) : undefined;
 
   const guestQuery = useQuery({
     queryKey: ["guest", code],
@@ -152,7 +153,7 @@ function Convite() {
         </p>
         <div className="glass overflow-hidden rounded-3xl">
           <iframe
-            title="Mapa — Residencial Bendiak"
+            title="Mapa — Bendiak Village"
             className="h-64 w-full"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"

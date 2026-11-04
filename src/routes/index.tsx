@@ -6,6 +6,7 @@ import hero from "@/assets/Kayan-hero.jpeg";
 import { EVENT } from "@/lib/mock";
 import { fetchEventInfo, fetchGuestByCode, verifyGuestCode, type Guest } from "@/lib/api";
 import { formatEventDate } from "@/lib/event-date";
+import { GUEST_CODE_MAX_LEN, isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Search = { c?: string | undefined };
@@ -41,7 +42,7 @@ function Portal() {
   const eventDate = eventQuery.data ? formatEventDate(eventQuery.data.event_date).date : EVENT.date;
 
   useEffect(() => {
-    if (!c || !/^\d{6}$/.test(c)) {
+    if (!c || !isValidGuestCode(c)) {
       setLinkedGuest(undefined);
       return;
     }
@@ -56,9 +57,9 @@ function Portal() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = code.replace(/\D/g, "").slice(0, 6);
-    if (trimmed.length !== 6) {
-      setError("Introduza o código de 6 dígitos.");
+    const trimmed = normalizeGuestCode(code);
+    if (!isValidGuestCode(trimmed)) {
+      setError("Introduza o seu número de telemóvel completo.");
       return;
     }
     setLoading(true);
@@ -69,7 +70,7 @@ function Portal() {
       setOpening(true);
       setTimeout(() => navigate({ to: "/convite", search: { c: guest.code } }), 700);
     } catch {
-      setError("Código incorrecto. Verifique com a organização.");
+      setError("Número não encontrado. Verifique com a organização.");
     } finally {
       setLoading(false);
     }
@@ -108,7 +109,7 @@ function Portal() {
         </button>
         <p className="mt-4 text-sm tracking-widest text-gold-soft">
           {knownGuest
-            ? `${knownGuest.name} — toque no cadeado e indique o seu código`
+            ? `${knownGuest.name} — toque no cadeado e indique o seu número`
             : "Convite exclusivo — toque no cadeado"}
         </p>
       </div>
@@ -120,20 +121,20 @@ function Portal() {
             <button type="button" onClick={() => setAskCode(false)} aria-label="Fechar" className="absolute right-3 top-3 text-muted-foreground">
               <X size={18} />
             </button>
-            <p className="font-script text-gold-gradient text-4xl">Código de convite</p>
-            <p className="mt-2 text-sm text-muted-foreground">Introduza o código de 6 dígitos que recebeu.</p>
+            <p className="font-script text-gold-gradient text-4xl">Número de convite</p>
+            <p className="mt-2 text-sm text-muted-foreground">Use o mesmo número de telemóvel que a organização registou.</p>
             <input
               autoFocus
               value={code}
               onChange={(e) => {
-                setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                setCode(normalizeGuestCode(e.target.value));
                 setError("");
               }}
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="000000"
-              aria-label="Código de convite"
-              className="mt-5 w-full rounded-full border border-input bg-transparent px-5 py-3 text-center text-2xl tracking-[0.5em] outline-none focus:ring-2 focus:ring-ring"
+              inputMode="tel"
+              maxLength={GUEST_CODE_MAX_LEN}
+              placeholder="84XXXXXXXX"
+              aria-label="Número de telemóvel"
+              className="mt-5 w-full rounded-full border border-input bg-transparent px-5 py-3 text-center text-xl tracking-wider outline-none focus:ring-2 focus:ring-ring"
             />
             {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
             <button
