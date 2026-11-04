@@ -8,18 +8,14 @@ import { fetchEventInfo, fetchGuestByCode, verifyGuestCode, type Guest } from "@
 import { formatEventDate } from "@/lib/event-date";
 import { GUEST_CODE_MAX_LEN, isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { shareMetaTags } from "@/lib/site-meta";
 
 type Search = { c?: string | undefined };
 
 export const Route = createFileRoute("/")({
   validateSearch: (s: Record<string, unknown>): Search => ({ c: typeof s["c"] === "string" ? s["c"] : undefined }),
   head: () => ({
-    meta: [
-      { title: "Graduação Kayan & Orquídea — Convite" },
-      { name: "description", content: "Convite digital para a graduação de Kayan e Orquídea." },
-      { property: "og:title", content: "Graduação Kayan & Orquídea" },
-      { property: "og:description", content: "Você está convidado(a) para celebrar esta graduação." },
-    ],
+    meta: shareMetaTags(),
   }),
   component: Portal,
 });

@@ -9,18 +9,15 @@ import { fetchEventInfo, fetchGallery, fetchGuestByCode, fetchProgram, mediaUrl 
 import { formatEventDate } from "@/lib/event-date";
 import { isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { InviteMessage } from "@/components/InviteMessage";
+import { shareMetaTags } from "@/lib/site-meta";
 
 type Search = { c?: string | undefined };
 
 export const Route = createFileRoute("/convite")({
   validateSearch: (s: Record<string, unknown>): Search => ({ c: typeof s["c"] === "string" ? s["c"] : undefined }),
   head: () => ({
-    meta: [
-      { title: "O seu convite — Graduação Dra Kayan" },
-      { name: "description", content: "Detalhes, mesa, local, presentes e galeria da graduação da Dra Kayan." },
-      { property: "og:title", content: "O seu convite — Dra Kayan" },
-      { property: "og:description", content: "Confirme presença, envie felicitações e partilhe fotos." },
-    ],
+    meta: shareMetaTags(),
   }),
   component: Convite,
 });
@@ -126,6 +123,8 @@ function Convite() {
           )}
         </div>
       </header>
+
+      <InviteMessage />
 
       <Section id="programa" title="Programa">
         <p className="font-semibold">{dateLong}</p>
