@@ -186,7 +186,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
       setName("");
       setContact("");
       setTable("");
-      setMsg(`Convidado criado. Número de acesso: ${g.code}`);
+      setMsg(`Convidado criado. Entra no convite com o telemóvel ${g.code}.`);
       qc.invalidateQueries({ queryKey: ["admin-guests"] });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro");
@@ -315,8 +315,9 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-medium">{g.name}</p>
-                      <p className="text-xs text-muted-foreground">{g.contact}</p>
-                      <p className="font-mono text-sm tracking-widest text-primary">{g.code}</p>
+                      <p className="font-mono text-sm tracking-wide text-primary">
+                        Telemóvel (acesso ao convite): {g.code}
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -346,10 +347,17 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
             <form onSubmit={addGuest} className="glass space-y-3 rounded-2xl p-5">
               <p className="text-sm font-medium">Novo convidado</p>
               <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome" className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm" />
-              <input required value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Contacto" className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm" />
+              <input
+                required
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
+                placeholder="Telemóvel (ex: 841041035) — será o acesso"
+                inputMode="tel"
+                className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+              />
               <input value={table} onChange={(e) => setTable(e.target.value)} placeholder="Mesa (opcional)" className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm" />
               <button type="submit" className="bg-gold-gradient w-full rounded-full py-2.5 text-sm font-semibold text-primary-foreground">
-                Adicionar (código automático)
+                Adicionar convidado
               </button>
             </form>
           </div>
