@@ -118,7 +118,7 @@ function Portal() {
               <X size={18} />
             </button>
             <p className="font-script text-gold-gradient text-4xl">Número de convite</p>
-            <p className="mt-2 text-sm text-muted-foreground">Use o seu contacto do WhatsApp.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Introduza o seu contacto do WhatsApp.</p>
             <input
               autoFocus
               value={code}
