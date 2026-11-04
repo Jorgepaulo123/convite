@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   CalendarDays,
   ClipboardCheck,
+  FileDown,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -41,6 +42,12 @@ import {
 import { logoutAdmin } from "@/lib/admin-auth";
 import { formatEventDate } from "@/lib/event-date";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import {
+  downloadGuestsPdf,
+  filterGuests,
+  RSVP_FILTER_LABEL,
+  type GuestRsvpFilter,
+} from "@/lib/guest-list-utils";
 
 const MODES: { id: ScreenMode; label: string; icon: typeof Video }[] = [
   { id: "live", label: "Ao vivo", icon: Video },
@@ -91,6 +98,68 @@ function GuestStatsCards({ total, presentes, emFalta }: GuestStats) {
   );
 }
 
+function GuestListToolbar({
+  search,
+  onSearchChange,
+  rsvpFilter,
+  onRsvpFilterChange,
+  filteredCount,
+  totalCount,
+  onDownloadPdf,
+  pdfBusy,
+}: {
+  search: string;
+  onSearchChange: (v: string) => void;
+  rsvpFilter: GuestRsvpFilter;
+  onRsvpFilterChange: (v: GuestRsvpFilter) => void;
+  filteredCount: number;
+  totalCount: number;
+  onDownloadPdf: () => void;
+  pdfBusy: boolean;
+}) {
+  return (
+    <div className="glass mb-4 space-y-3 rounded-2xl p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <label className="min-w-[200px] flex-1">
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">Pesquisar</span>
+          <input
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Nome, telemóvel, mesa…"
+            className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+          />
+        </label>
+        <label className="w-full sm:w-52">
+          <span className="mb-1 block text-xs font-medium text-muted-foreground">Filtrar presença</span>
+          <select
+            value={rsvpFilter}
+            onChange={(e) => onRsvpFilterChange(e.target.value as GuestRsvpFilter)}
+            className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+          >
+            {(Object.keys(RSVP_FILTER_LABEL) as GuestRsvpFilter[]).map((key) => (
+              <option key={key} value={key}>
+                {RSVP_FILTER_LABEL[key]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          disabled={pdfBusy || filteredCount === 0}
+          onClick={onDownloadPdf}
+          className="bg-gold-gradient inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40 sm:mb-0"
+        >
+          <FileDown size={16} />
+          {pdfBusy ? "A gerar…" : "Baixar PDF"}
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        A mostrar {filteredCount} de {totalCount} convidado{totalCount === 1 ? "" : "s"}
+      </p>
+    </div>
+  );
+}
+
 function RsvpBadge({ status }: { status: NonNullable<GuestAdmin["rsvp_status"]> }) {
   return (
     <span
@@ -123,6 +192,9 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
   const [editContact, setEditContact] = useState("");
   const [editTable, setEditTable] = useState("");
   const [savingGuest, setSavingGuest] = useState(false);
+  const [guestListSearch, setGuestListSearch] = useState("");
+  const [guestListRsvpFilter, setGuestListRsvpFilter] = useState<GuestRsvpFilter>("all");
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   const guestsQuery = useQuery({
     queryKey: ["admin-guests"],
@@ -209,6 +281,31 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     const emFalta = total - presentes;
     return { total, presentes, emFalta };
   }, [guestsQuery.data]);
+
+  const allGuests = guestsQuery.data ?? [];
+
+  const filteredGuests = useMemo(
+    () => filterGuests(allGuests, guestListSearch, guestListRsvpFilter),
+    [allGuests, guestListSearch, guestListRsvpFilter],
+  );
+
+  const exportGuestsPdf = async (title: string) => {
+    if (!filteredGuests.length) return;
+    setPdfBusy(true);
+    setErr("");
+    try {
+      await downloadGuestsPdf(filteredGuests, {
+        title,
+        search: guestListSearch,
+        rsvpFilter: guestListRsvpFilter,
+      });
+      setMsg("PDF descarregado.");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erro ao gerar PDF");
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   const saveProgramSection = async () => {
     setErr("");
@@ -413,6 +510,16 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
             </p>
             <GuestStatsCards {...presenceStats} />
             <p className="mb-3 text-sm font-medium">Lista de convidados</p>
+            <GuestListToolbar
+              search={guestListSearch}
+              onSearchChange={setGuestListSearch}
+              rsvpFilter={guestListRsvpFilter}
+              onRsvpFilterChange={setGuestListRsvpFilter}
+              filteredCount={filteredGuests.length}
+              totalCount={allGuests.length}
+              pdfBusy={pdfBusy}
+              onDownloadPdf={() => exportGuestsPdf("Lista de presenças — Graduação Dra Kayan")}
+            />
             <div className="glass overflow-hidden rounded-2xl">
               <div className="hidden border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground sm:grid sm:grid-cols-[1fr_1fr_1fr_auto] sm:gap-2">
                 <span>Nome</span>
@@ -421,7 +528,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                 <span className="text-right">Presença</span>
               </div>
               <ul className="max-h-[55vh] divide-y divide-border overflow-y-auto text-sm">
-                {(guestsQuery.data ?? []).map((g) => {
+                {filteredGuests.map((g) => {
                   const status = g.rsvp_status ?? "pending";
                   return (
                     <li
@@ -438,8 +545,11 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                   );
                 })}
               </ul>
-              {!guestsQuery.data?.length && !guestsQuery.isLoading && (
+              {!allGuests.length && !guestsQuery.isLoading && (
                 <p className="px-4 py-6 text-muted-foreground">Ainda não há convidados registados.</p>
+              )}
+              {allGuests.length > 0 && !filteredGuests.length && (
+                <p className="px-4 py-6 text-muted-foreground">Nenhum convidado corresponde ao filtro.</p>
               )}
             </div>
           </div>
@@ -451,8 +561,18 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
             <p className="mb-6 text-sm text-muted-foreground">Gerir convidados, mesas e contactos de acesso ao convite.</p>
             <GuestStatsCards {...presenceStats} />
             <p className="mb-3 text-sm font-medium">Lista de convidados</p>
+            <GuestListToolbar
+              search={guestListSearch}
+              onSearchChange={setGuestListSearch}
+              rsvpFilter={guestListRsvpFilter}
+              onRsvpFilterChange={setGuestListRsvpFilter}
+              filteredCount={filteredGuests.length}
+              totalCount={allGuests.length}
+              pdfBusy={pdfBusy}
+              onDownloadPdf={() => exportGuestsPdf("Lista de convidados — Graduação Dra Kayan")}
+            />
             <ul className="mb-6 max-h-[50vh] space-y-2 overflow-y-auto text-sm">
-              {(guestsQuery.data ?? []).map((g) =>
+              {filteredGuests.map((g) =>
                 editingGuestId === g.id ? (
                   <li key={g.id} className="glass rounded-xl p-4">
                     <form onSubmit={saveEditGuest} className="space-y-3">
@@ -530,8 +650,11 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                   </li>
                 ),
               )}
-              {!guestsQuery.data?.length && !guestsQuery.isLoading && (
+              {!allGuests.length && !guestsQuery.isLoading && (
                 <p className="text-muted-foreground">Ainda não há convidados.</p>
+              )}
+              {allGuests.length > 0 && !filteredGuests.length && (
+                <p className="text-muted-foreground">Nenhum convidado corresponde ao filtro.</p>
               )}
             </ul>
             <form onSubmit={addGuest} className="glass space-y-3 rounded-2xl p-5">
