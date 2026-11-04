@@ -21,9 +21,9 @@ export const GIFT_RECIPIENTS: Record<
 > = {
   kayan: {
     displayName: "Kayan",
-    mpesa: "84 000 0000",
-    emola: "86 000 0000",
-    bank: "0000 0000 0000 0000 0000 0",
+    mpesa: "84 933 4480",
+    emola: "87 933 4480",
+    bank: "0008 0000 8983 3932 1018 0 — BCI",
   },
   orquidea: {
     displayName: "Orquídea",
