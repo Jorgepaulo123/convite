@@ -51,7 +51,7 @@ function Page() {
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Escreva uma felicitação para a Dra Kayan..."
+            placeholder="Escreva uma felicitação para a Msc. Kayan e a Dra. Orquídea…"
             className={field + " h-40"}
           />
           {err && <p className="mt-3 text-sm text-destructive">{err}</p>}
