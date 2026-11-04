@@ -141,10 +141,23 @@ function Convite() {
       <Section id="local" title="Local">
         <p className="mb-4 flex items-center justify-center gap-2">
           <MapPin size={16} className="text-primary" />
-          {EVENT.venue}
+          <a
+            href={EVENT.mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold underline decoration-primary/40 underline-offset-2 hover:text-primary"
+          >
+            {EVENT.venue}
+          </a>
         </p>
         <div className="glass overflow-hidden rounded-3xl">
-          <iframe title="Mapa" className="h-64 w-full" loading="lazy" src={`https://www.google.com/maps?q=${encodeURIComponent(EVENT.mapQuery)}&output=embed`} />
+          <iframe
+            title="Mapa — Residencial Bendiak"
+            className="h-64 w-full"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            src={`https://www.google.com/maps?q=${encodeURIComponent(EVENT.mapQuery)}&z=16&output=embed`}
+          />
         </div>
       </Section>
 

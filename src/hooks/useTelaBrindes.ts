@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ScreenToast } from "@/lib/api";
+import { mediaUrl, type ScreenToast } from "@/lib/api";
+import { preloadImage } from "@/lib/preload-image";
 
 export type DockedFelicitation = {
   id: number;
@@ -39,7 +40,7 @@ export function useTelaBrindes(initialPool: DockedFelicitation[] = []) {
   const poolRef = useRef<DockedFelicitation[]>(initialPool);
   const poolRotateRef = useRef(0);
   const queueRef = useRef<ScreenToast[]>([]);
-  const phaseRef = useRef<"idle" | "spotlight" | "flying" | "dock-anim">("idle");
+  const phaseRef = useRef<"idle" | "spotlight-loading" | "spotlight" | "flying" | "dock-anim">("idle");
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const pumpRef = useRef<() => void>(() => undefined);
   const dockedRef = useRef(docked);
@@ -99,25 +100,42 @@ export function useTelaBrindes(initialPool: DockedFelicitation[] = []) {
       return;
     }
     setIsIdle(false);
+
+    if (next.kind === "photo") {
+      phaseRef.current = "spotlight-loading";
+      const src = mediaUrl(next.url);
+      preloadImage(src)
+        .then(() => {
+          if (phaseRef.current !== "spotlight-loading") return;
+          phaseRef.current = "spotlight";
+          setSpotlight(next);
+          schedule(() => {
+            phaseRef.current = "idle";
+            setSpotlight(null);
+            syncIdle();
+            pumpRef.current();
+          }, SPOTLIGHT_MS);
+        })
+        .catch(() => {
+          phaseRef.current = "idle";
+          syncIdle();
+          pumpRef.current();
+        });
+      return;
+    }
+
     phaseRef.current = "spotlight";
     setSpotlight(next);
     schedule(() => {
-      if (next.kind === "message") {
-        const item = { id: next.id, guest_name: next.guest_name, message: next.message };
-        poolRef.current = upsertPool(poolRef.current, item);
-        phaseRef.current = "flying";
-        setSpotlight(null);
-        setFlying(next);
-        schedule(() => {
-          setFlying(null);
-          appendToDock(item);
-        }, FLY_MS);
-      } else {
-        phaseRef.current = "idle";
-        setSpotlight(null);
-        syncIdle();
-        pumpRef.current();
-      }
+      const item = { id: next.id, guest_name: next.guest_name, message: next.message };
+      poolRef.current = upsertPool(poolRef.current, item);
+      phaseRef.current = "flying";
+      setSpotlight(null);
+      setFlying(next);
+      schedule(() => {
+        setFlying(null);
+        appendToDock(item);
+      }, FLY_MS);
     }, SPOTLIGHT_MS);
   };
 

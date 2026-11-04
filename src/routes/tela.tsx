@@ -3,7 +3,15 @@ import { MessageCircleHeart, Radio, Sparkles, Smartphone } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import j2 from "@/assets/journey-2.jpg";
 import { DOCK_FELICITATIONS_COUNT, useTelaBrindes } from "@/hooks/useTelaBrindes";
-import { fetchRecentFelicitacoes, fetchScreenState, mediaUrl, type ScreenMode } from "@/lib/api";
+import { PreloadedCoverImage } from "@/components/PreloadedCoverImage";
+import {
+  fetchRecentFelicitacoes,
+  fetchScreenState,
+  mediaUrl,
+  type ScreenMode,
+  type ScreenToast,
+} from "@/lib/api";
+import { preloadImage } from "@/lib/preload-image";
 import type { ScreenStatePayload } from "@/lib/screen-ws";
 import { useTelaRealtime } from "@/hooks/useTelaRealtime";
 
@@ -24,17 +32,61 @@ const LIVE_SLIDE_MS = 8000;
 
 function LiveSlideBackground({ slides, fallbackSrc }: { slides: { id: number; url: string }[]; fallbackSrc: string }) {
   const [index, setIndex] = useState(0);
+  const [readyUrls, setReadyUrls] = useState<Set<string>>(() => new Set());
+  const lastShownIndexRef = useRef(0);
 
   const slideKey = slides.map((s) => s.id).join(",");
+  const urls = slides.map((s) => mediaUrl(s.url));
+
   useEffect(() => {
     setIndex(0);
+    lastShownIndexRef.current = 0;
   }, [slideKey]);
 
   useEffect(() => {
+    let cancelled = false;
+    for (const url of urls) {
+      preloadImage(url)
+        .then(() => {
+          if (cancelled) return;
+          setReadyUrls((prev) => {
+            if (prev.has(url)) return prev;
+            const next = new Set(prev);
+            next.add(url);
+            return next;
+          });
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [slideKey, urls.join("|")]);
+
+  useEffect(() => {
     if (slides.length < 2) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), LIVE_SLIDE_MS);
+    const id = setInterval(() => {
+      setIndex((i) => {
+        const next = (i + 1) % slides.length;
+        const nextUrl = mediaUrl(slides[next]!.url);
+        if (!readyUrls.has(nextUrl)) return i;
+        return next;
+      });
+    }, LIVE_SLIDE_MS);
     return () => clearInterval(id);
-  }, [slides.length]);
+  }, [slides, readyUrls]);
+
+  const showIndex = (() => {
+    const currentUrl = urls[index];
+    if (currentUrl && readyUrls.has(currentUrl)) {
+      lastShownIndexRef.current = index;
+      return index;
+    }
+    const last = lastShownIndexRef.current;
+    const lastUrl = urls[last];
+    if (lastUrl && readyUrls.has(lastUrl)) return last;
+    return -1;
+  })();
 
   if (slides.length === 0) {
     return <img src={fallbackSrc} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />;
@@ -42,16 +94,60 @@ function LiveSlideBackground({ slides, fallbackSrc }: { slides: { id: number; ur
 
   return (
     <>
-      {slides.map((slide, i) => (
-        <img
-          key={slide.id}
-          src={mediaUrl(slide.url)}
-          alt=""
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1200ms] ease-in-out ${
-            i === index ? "opacity-70" : "opacity-0"
-          }`}
-        />
-      ))}
+      <img src={fallbackSrc} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" aria-hidden />
+      {slides.map((slide, i) => {
+        const src = mediaUrl(slide.url);
+        const loaded = readyUrls.has(src);
+        const visible = i === showIndex && loaded;
+        return (
+          <img
+            key={slide.id}
+            src={src}
+            alt=""
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1200ms] ease-in-out ${
+              visible ? "opacity-70" : "opacity-0"
+            }`}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function PhotoSpotlight({ toast }: { toast: Extract<ScreenToast, { kind: "photo" }> }) {
+  const src = mediaUrl(toast.url);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(false);
+    let cancelled = false;
+    preloadImage(src)
+      .then(() => {
+        if (!cancelled) setReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setReady(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+
+  if (!ready) return null;
+
+  return (
+    <>
+      <div className="animate-brinde-backdrop absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
+      <div key={`photo-${toast.id}`} className="animate-brinde-center relative z-10 flex flex-col items-center">
+        <div className="phone-mockup shadow-gold">
+          <div className="phone-notch" />
+          <img src={src} alt="" className="phone-screen object-cover" />
+        </div>
+        <p className="mt-6 flex items-center gap-2 text-2xl text-secondary-foreground">
+          <Smartphone className="text-primary" size={28} />
+          <span className="font-semibold text-primary">{toast.guest_name}</span> partilhou um momento
+        </p>
+      </div>
     </>
   );
 }
@@ -145,7 +241,7 @@ function TelaStage({
         ) : isVideo ? (
           <video src={bg} className="absolute inset-0 h-full w-full object-cover opacity-70" autoPlay muted loop playsInline />
         ) : (
-          <img src={bg} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
+          <PreloadedCoverImage src={bg} />
         )}
         <div className="bg-veil absolute inset-0" />
 
@@ -202,23 +298,12 @@ function TelaStage({
 
         {spotlight && (
           <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center">
-            <div className="animate-brinde-backdrop absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
-
-            {spotlight.kind === "photo" && (
-              <div key={`photo-${spotlight.id}`} className="animate-brinde-center relative z-10 flex flex-col items-center">
-                <div className="phone-mockup shadow-gold">
-                  <div className="phone-notch" />
-                  <img src={mediaUrl(spotlight.url)} alt="" className="phone-screen object-cover" />
-                </div>
-                <p className="mt-6 flex items-center gap-2 text-2xl text-secondary-foreground">
-                  <Smartphone className="text-primary" size={28} />
-                  <span className="font-semibold text-primary">{spotlight.guest_name}</span> partilhou um momento
-                </p>
-              </div>
-            )}
-
-            {spotlight.kind === "message" && (
-              <div key={`msg-${spotlight.id}`} className="animate-brinde-center relative z-10 max-w-3xl px-12 text-center">
+            {spotlight.kind === "photo" ? (
+              <PhotoSpotlight toast={spotlight} />
+            ) : (
+              <>
+                <div className="animate-brinde-backdrop absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
+                <div key={`msg-${spotlight.id}`} className="animate-brinde-center relative z-10 max-w-3xl px-12 text-center">
                 <div className="celebrate-confetti pointer-events-none absolute inset-0 overflow-hidden">
                   {CONFETTI.map((c, i) => (
                     <span key={i} className="confetti-piece" style={{ left: `${8 + i * 11}%`, animationDelay: `${i * 0.12}s` }}>
@@ -233,6 +318,7 @@ function TelaStage({
                   <p className="mt-6 text-2xl tracking-wide text-gold-soft">— {spotlight.guest_name}</p>
                 </div>
               </div>
+              </>
             )}
           </div>
         )}
