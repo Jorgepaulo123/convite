@@ -45,6 +45,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   downloadGuestsPdf,
   filterGuests,
+  GUEST_PDF_EVENT_NAMES,
   RSVP_FILTER_LABEL,
   type GuestRsvpFilter,
 } from "@/lib/guest-list-utils";
@@ -518,7 +519,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
               filteredCount={filteredGuests.length}
               totalCount={allGuests.length}
               pdfBusy={pdfBusy}
-              onDownloadPdf={() => exportGuestsPdf("Lista de presenças — Graduação Dra Kayan")}
+              onDownloadPdf={() => exportGuestsPdf(`Lista de presenças — ${GUEST_PDF_EVENT_NAMES}`)}
             />
             <div className="glass overflow-hidden rounded-2xl">
               <div className="hidden border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground sm:grid sm:grid-cols-[1fr_1fr_1fr_auto] sm:gap-2">
@@ -569,7 +570,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
               filteredCount={filteredGuests.length}
               totalCount={allGuests.length}
               pdfBusy={pdfBusy}
-              onDownloadPdf={() => exportGuestsPdf("Lista de convidados — Graduação Dra Kayan")}
+              onDownloadPdf={() => exportGuestsPdf(`Lista de convidados — ${GUEST_PDF_EVENT_NAMES}`)}
             />
             <ul className="mb-6 max-h-[50vh] space-y-2 overflow-y-auto text-sm">
               {filteredGuests.map((g) =>

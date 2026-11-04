@@ -15,6 +15,9 @@ export const RSVP_STATUS_PDF: Record<NonNullable<GuestAdmin["rsvp_status"]>, str
   pending: "Por confirmar",
 };
 
+/** Título partilhado nos PDFs do admin (convidados / presenças). */
+export const GUEST_PDF_EVENT_NAMES = "Msc. Kayan e Dra. Orquídea";
+
 export function filterGuests(
   guests: GuestAdmin[],
   search: string,
@@ -38,31 +41,32 @@ export async function downloadGuestsPdf(
   const autoTable = (await import("jspdf-autotable")).default;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const generated = new Date().toLocaleString("pt-PT");
 
   doc.setFontSize(16);
   doc.text(options.title, 14, 18);
   doc.setFontSize(10);
-  doc.setTextColor(80);
-  doc.text(`Gerado em ${generated}`, 14, 25);
 
   const filterParts: string[] = [];
   if (options.rsvpFilter !== "all") filterParts.push(RSVP_FILTER_LABEL[options.rsvpFilter]);
   if (options.search.trim()) filterParts.push(`Pesquisa: «${options.search.trim()}»`);
-  if (filterParts.length) doc.text(`Filtro: ${filterParts.join(" · ")}`, 14, 31);
+
+  let y = 26;
+  if (filterParts.length) {
+    doc.setTextColor(80);
+    doc.text(`Filtro: ${filterParts.join(" · ")}`, 14, y);
+    y += 7;
+  }
 
   doc.setTextColor(0);
-  doc.text(`Total na lista: ${guests.length}`, 14, filterParts.length ? 37 : 31);
-
-  const startY = filterParts.length ? 42 : 36;
+  doc.text(`Total na lista: ${guests.length}`, 14, y);
+  const startY = y + 8;
 
   autoTable(doc, {
     startY,
-    head: [["Nome", "Mesa", "Telemóvel", "Contacto", "Presença"]],
+    head: [["Nome", "Mesa", "Telemóvel", "Presença"]],
     body: guests.map((g) => [
       g.name,
       g.table ?? "—",
-      g.code,
       g.contact,
       RSVP_STATUS_PDF[g.rsvp_status ?? "pending"],
     ]),
