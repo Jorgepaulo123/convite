@@ -518,8 +518,8 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
             <section>
               <h2 className="mb-2 text-xl font-semibold">Galeria — A Jornada</h2>
               <p className="mb-4 text-sm text-muted-foreground">
-                Aparecem no convite digital (secção A Jornada). Selfies de convidados em &quot;Tirar foto&quot; entram aqui
-                automaticamente. Não alimentam o modo Ao vivo da tela — isso é na secção Tela gigante → Ao vivo.
+                Aparecem no convite digital (secção A Jornada). Selfies de convidados{" "}
+                <strong>não</strong> entram aqui — vão só para a /tela (brinde) e para a lista abaixo.
               </p>
               <label className="glass mb-4 grid h-40 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground">
                 Carregar fotos da jornada
@@ -550,8 +550,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
             <section>
               <h2 className="mb-2 text-xl font-semibold">Selfies dos convidados</h2>
               <p className="mb-4 text-sm text-muted-foreground">
-                Cópia de referência (com nome). Cada envio entra automaticamente na galeria acima — já não vai só para a
-                tela em brinde.
+                Referência para o organizador (comprimidas para a tela). Não aparecem em A Jornada no convite.
               </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                 {(guestPhotosQuery.data ?? []).map((p) => (
