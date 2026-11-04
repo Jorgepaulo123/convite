@@ -27,8 +27,8 @@ export const GIFT_RECIPIENTS: Record<
   },
   orquidea: {
     displayName: "Orquídea",
-    mpesa: "84 000 0001",
-    emola: "86 000 0001",
-    bank: "0000 0000 0000 0000 0001 0",
+    mpesa: "84 673 0101",
+    emola: "87 371 6821",
+    bank: "0001 0000 0123 8049 5105 7 — BIM",
   },
 };
