@@ -267,6 +267,8 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
   const [editDrinkName, setEditDrinkName] = useState("");
   const [editDrinkQty, setEditDrinkQty] = useState("");
   const [editDrinkCategory, setEditDrinkCategory] = useState<DrinkCategory>("CERVEJA");
+  const [drinkListCategory, setDrinkListCategory] = useState<"all" | DrinkCategory>("all");
+  const [drinkListSearch, setDrinkListSearch] = useState("");
 
   const guestsQuery = useQuery({
     queryKey: ["admin-guests"],
@@ -367,6 +369,17 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     () => filterGuests(allGuests, guestListSearch, guestListRsvpFilter),
     [allGuests, guestListSearch, guestListRsvpFilter],
   );
+
+  const filteredDrinks = useMemo(() => {
+    const rows = drinksQuery.data ?? [];
+    const q = drinkListSearch.trim().toLowerCase();
+    return rows.filter((d) => {
+      if (drinkListCategory !== "all" && d.category !== drinkListCategory) return false;
+      if (!q) return true;
+      const catLabel = DRINK_CATEGORY_LABEL[d.category as DrinkCategory] ?? d.category;
+      return [d.name, catLabel, d.category].join(" ").toLowerCase().includes(q);
+    });
+  }, [drinksQuery.data, drinkListCategory, drinkListSearch]);
 
   const filteredEnteredGuests = useMemo(() => {
     const entered = allGuests.filter((g) => g.checked_in_at);
@@ -809,15 +822,50 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
         )}
 
         {section === "drinks" && (
-          <div className="max-w-xl">
+          <div className="w-full max-w-5xl">
             <h2 className="mb-2 text-xl font-semibold">Bebidas</h2>
-            <p className="mb-4 text-sm text-muted-foreground">
+            <p className="mb-6 text-sm text-muted-foreground">
               Cadastre nome, stock e foto. Convidados veem o catálogo em{" "}
               <span className="text-primary">/catalogo</span> · Garçom:{" "}
               <span className="text-primary">/garcom</span>.
             </p>
-            <ul className="mb-4 space-y-2">
-              {(drinksQuery.data ?? []).map((d) => (
+
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] lg:items-start">
+              <div className="min-w-0">
+                <div className="glass mb-4 flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:flex-wrap sm:items-end">
+                  <label className="min-w-[160px] flex-1">
+                    <span className="mb-1 block text-xs font-medium text-muted-foreground">Filtrar categoria</span>
+                    <select
+                      value={drinkListCategory}
+                      onChange={(e) =>
+                        setDrinkListCategory(e.target.value === "all" ? "all" : (e.target.value as DrinkCategory))
+                      }
+                      className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+                    >
+                      <option value="all">Todas</option>
+                      {DRINK_CATEGORIES.map((c) => (
+                        <option key={c} value={c}>
+                          {DRINK_CATEGORY_LABEL[c]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="min-w-[180px] flex-[2]">
+                    <span className="mb-1 block text-xs font-medium text-muted-foreground">Pesquisar</span>
+                    <input
+                      value={drinkListSearch}
+                      onChange={(e) => setDrinkListSearch(e.target.value)}
+                      placeholder="Nome da bebida…"
+                      className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+                    />
+                  </label>
+                  <p className="text-xs text-muted-foreground sm:pb-2">
+                    {filteredDrinks.length} de {(drinksQuery.data ?? []).length}
+                  </p>
+                </div>
+
+                <ul className="space-y-2">
+              {filteredDrinks.map((d) => (
                 <li key={d.id} className="glass rounded-xl px-3 py-3 text-sm">
                   {editingDrinkId === d.id ? (
                     <div className="flex flex-wrap items-center gap-2">
@@ -949,11 +997,20 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                   )}
                 </li>
               ))}
-              {!drinksQuery.data?.length && !drinksQuery.isLoading && (
-                <p className="text-sm text-muted-foreground">Nenhuma bebida cadastrada.</p>
+              {!filteredDrinks.length && !drinksQuery.isLoading && (
+                <p className="text-sm text-muted-foreground">
+                  {(drinksQuery.data ?? []).length
+                    ? "Nenhuma bebida corresponde ao filtro."
+                    : "Nenhuma bebida cadastrada."}
+                </p>
               )}
-            </ul>
-            <form onSubmit={addDrink} className="glass space-y-3 rounded-2xl p-5">
+                </ul>
+              </div>
+
+              <form
+                onSubmit={addDrink}
+                className="glass space-y-3 rounded-2xl p-5 lg:sticky lg:top-6"
+              >
               <p className="text-sm font-medium">Nova bebida</p>
               <label className="block">
                 <span className="mb-1 block text-xs text-muted-foreground">Categoria</span>
@@ -997,7 +1054,8 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
               <button type="submit" className="bg-gold-gradient w-full rounded-full py-2.5 text-sm font-semibold text-primary-foreground">
                 Cadastrar bebida
               </button>
-            </form>
+              </form>
+            </div>
           </div>
         )}
 
