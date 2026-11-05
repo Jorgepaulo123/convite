@@ -12,6 +12,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   FileDown,
+  Wine,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -19,7 +20,11 @@ import {
   adminDeleteGuest,
   adminListFelicitacoes,
   adminCreateProgramItem,
+  adminCreateDrink,
   adminDeleteProgramItem,
+  adminDeleteDrink,
+  adminListDrinks,
+  adminUpdateDrink,
   adminListGuestPhotos,
   adminListGuests,
   adminSetScreenMode,
@@ -57,7 +62,7 @@ const MODES: { id: ScreenMode; label: string; icon: typeof Video }[] = [
   { id: "brindes", label: "Brindes", icon: MessageSquare },
 ];
 
-type Section = "guests" | "presence" | "program" | "screen" | "gallery" | "messages";
+type Section = "guests" | "presence" | "program" | "drinks" | "screen" | "gallery" | "messages";
 
 const RSVP_LABEL: Record<NonNullable<GuestAdmin["rsvp_status"]>, string> = {
   yes: "Confirmado — vai",
@@ -69,6 +74,7 @@ const NAV: { id: Section; label: string; icon: typeof Users }[] = [
   { id: "guests", label: "Convidados", icon: Users },
   { id: "presence", label: "Presenças", icon: ClipboardCheck },
   { id: "program", label: "Programa", icon: CalendarDays },
+  { id: "drinks", label: "Bebidas", icon: Wine },
   { id: "screen", label: "Tela gigante", icon: MonitorPlay },
   { id: "gallery", label: "Galeria", icon: Upload },
   { id: "messages", label: "Felicitações", icon: MessageSquare },
@@ -251,6 +257,11 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
   const [guestListSearch, setGuestListSearch] = useState("");
   const [guestListRsvpFilter, setGuestListRsvpFilter] = useState<GuestRsvpFilter>("all");
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [drinkName, setDrinkName] = useState("");
+  const [drinkQty, setDrinkQty] = useState("");
+  const [editingDrinkId, setEditingDrinkId] = useState<number | null>(null);
+  const [editDrinkName, setEditDrinkName] = useState("");
+  const [editDrinkQty, setEditDrinkQty] = useState("");
 
   const guestsQuery = useQuery({
     queryKey: ["admin-guests"],
@@ -287,6 +298,12 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     queryKey: ["event-info"],
     queryFn: fetchEventInfo,
     enabled: section === "program",
+  });
+
+  const drinksQuery = useQuery({
+    queryKey: ["admin-drinks"],
+    queryFn: adminListDrinks,
+    enabled: section === "drinks",
   });
 
   const screenStateQuery = useQuery({
@@ -495,6 +512,44 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
       setProgTime("");
       setMsg("Item do programa adicionado.");
       qc.invalidateQueries({ queryKey: ["program"] });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erro");
+    }
+  };
+
+  const addDrink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr("");
+    const qty = parseInt(drinkQty, 10);
+    if (!drinkName.trim() || Number.isNaN(qty) || qty < 0) {
+      setErr("Indique nome e quantidade válida.");
+      return;
+    }
+    try {
+      await adminCreateDrink(drinkName.trim(), qty);
+      setDrinkName("");
+      setDrinkQty("");
+      setMsg("Bebida cadastrada.");
+      qc.invalidateQueries({ queryKey: ["admin-drinks"] });
+      qc.invalidateQueries({ queryKey: ["drinks-catalog"] });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erro");
+    }
+  };
+
+  const saveDrinkEdit = async (id: number) => {
+    setErr("");
+    const qty = parseInt(editDrinkQty, 10);
+    if (!editDrinkName.trim() || Number.isNaN(qty) || qty < 0) {
+      setErr("Quantidade inválida.");
+      return;
+    }
+    try {
+      await adminUpdateDrink(id, { name: editDrinkName.trim(), quantity: qty });
+      setEditingDrinkId(null);
+      setMsg("Bebida actualizada.");
+      qc.invalidateQueries({ queryKey: ["admin-drinks"] });
+      qc.invalidateQueries({ queryKey: ["drinks-catalog"] });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro");
     }
@@ -743,6 +798,122 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
           </div>
         )}
 
+        {section === "drinks" && (
+          <div className="max-w-xl">
+            <h2 className="mb-2 text-xl font-semibold">Bebidas</h2>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Cadastre o stock (quantidade disponível). Convidados pedem em{" "}
+              <span className="text-primary">/convite/bebidas</span> · Garçom vê pedidos em{" "}
+              <span className="text-primary">/garcom</span>.
+            </p>
+            <ul className="mb-4 space-y-2">
+              {(drinksQuery.data ?? []).map((d) => (
+                <li key={d.id} className="glass rounded-xl px-3 py-3 text-sm">
+                  {editingDrinkId === d.id ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        value={editDrinkName}
+                        onChange={(e) => setEditDrinkName(e.target.value)}
+                        className="min-w-[120px] flex-1 rounded-lg border border-input bg-transparent px-2 py-1.5"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        value={editDrinkQty}
+                        onChange={(e) => setEditDrinkQty(e.target.value)}
+                        className="w-24 rounded-lg border border-input bg-transparent px-2 py-1.5 tabular-nums"
+                      />
+                      <button type="button" className="text-primary text-xs font-medium" onClick={() => saveDrinkEdit(d.id)}>
+                        Guardar
+                      </button>
+                      <button type="button" className="text-xs text-muted-foreground" onClick={() => setEditingDrinkId(null)}>
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <span className="font-medium">{d.name}</span>
+                        <span className="ml-2 text-muted-foreground tabular-nums">Stock: {d.quantity}</span>
+                        {!d.active && <span className="ml-2 text-xs text-destructive">(inactiva)</span>}
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          className="text-xs text-primary"
+                          onClick={() => {
+                            setEditingDrinkId(d.id);
+                            setEditDrinkName(d.name);
+                            setEditDrinkQty(String(d.quantity));
+                          }}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="text-xs text-destructive"
+                          onClick={async () => {
+                            setErr("");
+                            try {
+                              await adminUpdateDrink(d.id, { active: !d.active });
+                              qc.invalidateQueries({ queryKey: ["admin-drinks"] });
+                              qc.invalidateQueries({ queryKey: ["drinks-catalog"] });
+                            } catch (e) {
+                              setErr(e instanceof Error ? e.message : "Erro");
+                            }
+                          }}
+                        >
+                          {d.active ? "Ocultar catálogo" : "Mostrar"}
+                        </button>
+                        <button
+                          type="button"
+                          className="text-xs text-destructive"
+                          onClick={async () => {
+                            setErr("");
+                            try {
+                              await adminDeleteDrink(d.id);
+                              qc.invalidateQueries({ queryKey: ["admin-drinks"] });
+                            } catch (e) {
+                              setErr(e instanceof Error ? e.message : "Erro");
+                            }
+                          }}
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              ))}
+              {!drinksQuery.data?.length && !drinksQuery.isLoading && (
+                <p className="text-sm text-muted-foreground">Nenhuma bebida cadastrada.</p>
+              )}
+            </ul>
+            <form onSubmit={addDrink} className="glass space-y-3 rounded-2xl p-5">
+              <p className="text-sm font-medium">Nova bebida</p>
+              <input
+                required
+                value={drinkName}
+                onChange={(e) => setDrinkName(e.target.value)}
+                placeholder="Nome (ex: Água, Vinho tinto)"
+                className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+              />
+              <input
+                required
+                type="number"
+                min={0}
+                value={drinkQty}
+                onChange={(e) => setDrinkQty(e.target.value)}
+                placeholder="Quantidade em stock"
+                className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+              />
+              <button type="submit" className="bg-gold-gradient w-full rounded-full py-2.5 text-sm font-semibold text-primary-foreground">
+                Cadastrar bebida
+              </button>
+            </form>
+          </div>
+        )}
+
         {section === "program" && (
           <div className="max-w-xl">
             <h2 className="mb-2 text-xl font-semibold">Programa do evento</h2>
@@ -845,7 +1016,8 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
             </p>
             <p className="mb-4 text-sm text-muted-foreground">
               Entrada na porta: <span className="text-primary">/porta</span> · Contador de presentes:{" "}
-              <span className="text-primary">/presencas</span>
+              <span className="text-primary">/presencas</span> · Garçom:{" "}
+              <span className="text-primary">/garcom</span>
             </p>
             <div className="grid grid-cols-2 gap-3">
               {MODES.map(({ id, label, icon: I }) => (

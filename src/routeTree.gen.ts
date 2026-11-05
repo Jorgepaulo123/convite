@@ -20,6 +20,8 @@ import { Route as ConviteFelicitacoesRouteImport } from './routes/convite_.felic
 import { Route as ConviteFotoRouteImport } from './routes/convite_.foto'
 import { Route as ConvitePresencaRouteImport } from './routes/convite_.presenca'
 import { Route as ConvitePresenteRouteImport } from './routes/convite_.presente'
+import { Route as ConviteBebidasRouteImport } from './routes/convite_.bebidas'
+import { Route as GarcomRouteImport } from './routes/garcom'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +78,16 @@ const ConvitePresenteRoute = ConvitePresenteRouteImport.update({
   path: '/convite/presente',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConviteBebidasRoute = ConviteBebidasRouteImport.update({
+  id: '/convite_/bebidas',
+  path: '/convite/bebidas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GarcomRoute = GarcomRouteImport.update({
+  id: '/garcom',
+  path: '/garcom',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +101,8 @@ export interface FileRoutesByFullPath {
   '/convite/foto': typeof ConviteFotoRoute
   '/convite/presenca': typeof ConvitePresencaRoute
   '/convite/presente': typeof ConvitePresenteRoute
+  '/convite/bebidas': typeof ConviteBebidasRoute
+  '/garcom': typeof GarcomRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,6 +116,8 @@ export interface FileRoutesByTo {
   '/convite/foto': typeof ConviteFotoRoute
   '/convite/presenca': typeof ConvitePresencaRoute
   '/convite/presente': typeof ConvitePresenteRoute
+  '/convite/bebidas': typeof ConviteBebidasRoute
+  '/garcom': typeof GarcomRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +132,8 @@ export interface FileRoutesById {
   '/convite_/foto': typeof ConviteFotoRoute
   '/convite_/presenca': typeof ConvitePresencaRoute
   '/convite_/presente': typeof ConvitePresenteRoute
+  '/convite_/bebidas': typeof ConviteBebidasRoute
+  '/garcom': typeof GarcomRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +149,8 @@ export interface FileRouteTypes {
     | '/convite/foto'
     | '/convite/presenca'
     | '/convite/presente'
+    | '/convite/bebidas'
+    | '/garcom'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +164,8 @@ export interface FileRouteTypes {
     | '/convite/foto'
     | '/convite/presenca'
     | '/convite/presente'
+    | '/convite/bebidas'
+    | '/garcom'
   id:
     | '__root__'
     | '/'
@@ -157,6 +179,8 @@ export interface FileRouteTypes {
     | '/convite_/foto'
     | '/convite_/presenca'
     | '/convite_/presente'
+    | '/convite_/bebidas'
+    | '/garcom'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +195,8 @@ export interface RootRouteChildren {
   ConviteFotoRoute: typeof ConviteFotoRoute
   ConvitePresencaRoute: typeof ConvitePresencaRoute
   ConvitePresenteRoute: typeof ConvitePresenteRoute
+  ConviteBebidasRoute: typeof ConviteBebidasRoute
+  GarcomRoute: typeof GarcomRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,6 +278,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConvitePresenteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/convite_/bebidas': {
+      id: '/convite_/bebidas'
+      path: '/convite/bebidas'
+      fullPath: '/convite/bebidas'
+      preLoaderRoute: typeof ConviteBebidasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/garcom': {
+      id: '/garcom'
+      path: '/garcom'
+      fullPath: '/garcom'
+      preLoaderRoute: typeof GarcomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -267,6 +307,8 @@ const rootRouteChildren: RootRouteChildren = {
   ConviteFotoRoute: ConviteFotoRoute,
   ConvitePresencaRoute: ConvitePresencaRoute,
   ConvitePresenteRoute: ConvitePresenteRoute,
+  ConviteBebidasRoute: ConviteBebidasRoute,
+  GarcomRoute: GarcomRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

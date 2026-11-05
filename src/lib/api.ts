@@ -45,6 +45,20 @@ export type GalleryItem = { id: number; url: string; sort_order: number };
 
 export type ProgramItem = { id: number; title: string; time: string; sort_order: number };
 
+export type Drink = { id: number; name: string; quantity: number; active: boolean; sort_order: number };
+
+export type DrinkOrderStatus = "pending" | "delivered" | "cancelled";
+
+export type DrinkOrder = {
+  id: number;
+  guest_name: string;
+  drink_name: string;
+  quantity: number;
+  status: DrinkOrderStatus;
+  created_at: string;
+  delivered_at?: string | null;
+};
+
 export type EventInfo = { event_date: string };
 
 export type ScreenMode = "live" | "photos" | "dance" | "brindes";
@@ -278,6 +292,70 @@ export async function adminUploadScreenMedia(file: File) {
 export async function fetchProgram(): Promise<ProgramItem[]> {
   const res = await fetch(apiUrl(`/api/program`));
   return parseJson<ProgramItem[]>(res);
+}
+
+export async function fetchDrinksCatalog(): Promise<Drink[]> {
+  const res = await fetch(apiUrl(`/api/drinks`));
+  return parseJson<Drink[]>(res);
+}
+
+export async function submitDrinkOrder(code: string, drinkId: number, quantity: number) {
+  const normalized = normalizeGuestCode(code);
+  const res = await fetch(apiUrl(`/api/drink-orders`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: normalized, drink_id: drinkId, quantity }),
+  });
+  return parseJson<DrinkOrder>(res);
+}
+
+export async function fetchStaffDrinkOrders(status?: DrinkOrderStatus) {
+  const q = status ? `?status=${status}` : "";
+  const res = await fetch(apiUrl(`/api/drink-orders/staff${q}`));
+  return parseJson<DrinkOrder[]>(res);
+}
+
+export async function updateDrinkOrderStatus(orderId: number, status: DrinkOrderStatus) {
+  const res = await fetch(apiUrl(`/api/drink-orders/${orderId}/status`), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  return parseJson<DrinkOrder>(res);
+}
+
+export async function adminListDrinks(): Promise<Drink[]> {
+  const res = await fetch(apiUrl(`/api/admin/drinks`), { headers: adminHeaders() });
+  return parseJson<Drink[]>(res);
+}
+
+export async function adminCreateDrink(name: string, quantity: number) {
+  const res = await fetch(apiUrl(`/api/admin/drinks`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...adminHeaders() },
+    body: JSON.stringify({ name, quantity }),
+  });
+  return parseJson<Drink>(res);
+}
+
+export async function adminUpdateDrink(
+  id: number,
+  patch: { name?: string; quantity?: number; active?: boolean },
+) {
+  const res = await fetch(apiUrl(`/api/admin/drinks/${id}`), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...adminHeaders() },
+    body: JSON.stringify(patch),
+  });
+  return parseJson<Drink>(res);
+}
+
+export async function adminDeleteDrink(id: number) {
+  const res = await fetch(apiUrl(`/api/admin/drinks/${id}`), {
+    method: "DELETE",
+    headers: adminHeaders(),
+  });
+  return parseJson<void>(res);
 }
 
 export async function fetchEventInfo(): Promise<EventInfo> {

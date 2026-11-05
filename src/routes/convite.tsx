@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, Gift, MapPin, CheckCircle2, MessageCircleHeart, Images, CalendarDays, Armchair } from "lucide-react";
+import { Camera, Gift, MapPin, CheckCircle2, MessageCircleHeart, Images, CalendarDays, Armchair, Wine } from "lucide-react";
 import hero from "@/assets/Kayan-hero.jpeg";
 import j1 from "@/assets/journey-1.jpg";
 import j2 from "@/assets/journey-2.jpg";
@@ -168,6 +168,7 @@ function Convite() {
             { icon: Gift, label: "Dar presente", to: "/convite/presente" },
             { icon: MessageCircleHeart, label: "Felicitações", to: "/convite/felicitacoes" },
             { icon: Camera, label: "Tirar foto", to: "/convite/foto" },
+            { icon: Wine, label: "Pedir bebida", to: "/convite/bebidas" },
           ].map(({ icon: Icon, label, to }) => (
             <Link key={label} to={to as "/convite/foto"} search={{ c: code }} className="glass flex flex-col items-center gap-2 rounded-2xl p-5 transition hover:shadow-gold">
               <Icon className="text-primary" />
