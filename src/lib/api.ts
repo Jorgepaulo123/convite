@@ -45,7 +45,14 @@ export type GalleryItem = { id: number; url: string; sort_order: number };
 
 export type ProgramItem = { id: number; title: string; time: string; sort_order: number };
 
-export type Drink = { id: number; name: string; quantity: number; active: boolean; sort_order: number };
+export type Drink = {
+  id: number;
+  name: string;
+  quantity: number;
+  active: boolean;
+  sort_order: number;
+  image_url?: string | null;
+};
 
 export type DrinkOrderStatus = "pending" | "delivered" | "cancelled";
 
@@ -329,11 +336,26 @@ export async function adminListDrinks(): Promise<Drink[]> {
   return parseJson<Drink[]>(res);
 }
 
-export async function adminCreateDrink(name: string, quantity: number) {
+export async function adminCreateDrink(name: string, quantity: number, photo?: File) {
+  const fd = new FormData();
+  fd.append("name", name);
+  fd.append("quantity", String(quantity));
+  if (photo) fd.append("file", photo);
   const res = await fetch(apiUrl(`/api/admin/drinks`), {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...adminHeaders() },
-    body: JSON.stringify({ name, quantity }),
+    headers: adminHeaders(),
+    body: fd,
+  });
+  return parseJson<Drink>(res);
+}
+
+export async function adminUploadDrinkPhoto(id: number, photo: File) {
+  const fd = new FormData();
+  fd.append("file", photo);
+  const res = await fetch(apiUrl(`/api/admin/drinks/${id}/photo`), {
+    method: "POST",
+    headers: adminHeaders(),
+    body: fd,
   });
   return parseJson<Drink>(res);
 }

@@ -25,6 +25,7 @@ import {
   adminDeleteDrink,
   adminListDrinks,
   adminUpdateDrink,
+  adminUploadDrinkPhoto,
   adminListGuestPhotos,
   adminListGuests,
   adminSetScreenMode,
@@ -259,6 +260,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [drinkName, setDrinkName] = useState("");
   const [drinkQty, setDrinkQty] = useState("");
+  const [drinkPhoto, setDrinkPhoto] = useState<File | null>(null);
   const [editingDrinkId, setEditingDrinkId] = useState<number | null>(null);
   const [editDrinkName, setEditDrinkName] = useState("");
   const [editDrinkQty, setEditDrinkQty] = useState("");
@@ -526,9 +528,10 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
       return;
     }
     try {
-      await adminCreateDrink(drinkName.trim(), qty);
+      await adminCreateDrink(drinkName.trim(), qty, drinkPhoto ?? undefined);
       setDrinkName("");
       setDrinkQty("");
+      setDrinkPhoto(null);
       setMsg("Bebida cadastrada.");
       qc.invalidateQueries({ queryKey: ["admin-drinks"] });
       qc.invalidateQueries({ queryKey: ["drinks-catalog"] });
@@ -802,8 +805,8 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
           <div className="max-w-xl">
             <h2 className="mb-2 text-xl font-semibold">Bebidas</h2>
             <p className="mb-4 text-sm text-muted-foreground">
-              Cadastre o stock (quantidade disponível). Convidados pedem em{" "}
-              <span className="text-primary">/convite/bebidas</span> · Garçom vê pedidos em{" "}
+              Cadastre nome, stock e foto. Convidados veem o catálogo em{" "}
+              <span className="text-primary">/catalogo</span> · Garçom:{" "}
               <span className="text-primary">/garcom</span>.
             </p>
             <ul className="mb-4 space-y-2">
@@ -832,12 +835,47 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                     </div>
                   ) : (
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <span className="font-medium">{d.name}</span>
-                        <span className="ml-2 text-muted-foreground tabular-nums">Stock: {d.quantity}</span>
-                        {!d.active && <span className="ml-2 text-xs text-destructive">(inactiva)</span>}
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        {d.image_url ? (
+                          <img
+                            src={mediaUrl(d.image_url)}
+                            alt=""
+                            className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-muted text-xs text-muted-foreground">
+                            Sem foto
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <span className="font-medium">{d.name}</span>
+                          <span className="ml-2 text-muted-foreground tabular-nums">Stock: {d.quantity}</span>
+                          {!d.active && <span className="ml-2 text-xs text-destructive">(inactiva)</span>}
+                        </div>
                       </div>
-                      <div className="flex gap-3">
+                      <div className="flex flex-wrap gap-3">
+                        <label className="cursor-pointer text-xs text-primary">
+                          Foto
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const f = e.target.files?.[0];
+                              e.target.value = "";
+                              if (!f) return;
+                              setErr("");
+                              try {
+                                await adminUploadDrinkPhoto(d.id, f);
+                                qc.invalidateQueries({ queryKey: ["admin-drinks"] });
+                                qc.invalidateQueries({ queryKey: ["drinks-catalog"] });
+                                setMsg("Foto actualizada.");
+                              } catch (err) {
+                                setErr(err instanceof Error ? err.message : "Erro no upload");
+                              }
+                            }}
+                          />
+                        </label>
                         <button
                           type="button"
                           className="text-xs text-primary"
@@ -907,6 +945,15 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                 placeholder="Quantidade em stock"
                 className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
               />
+              <label className="block">
+                <span className="mb-1 block text-xs text-muted-foreground">Foto da bebida (opcional)</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setDrinkPhoto(e.target.files?.[0] ?? null)}
+                  className="w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-1.5 file:text-primary-foreground"
+                />
+              </label>
               <button type="submit" className="bg-gold-gradient w-full rounded-full py-2.5 text-sm font-semibold text-primary-foreground">
                 Cadastrar bebida
               </button>

@@ -22,6 +22,7 @@ import { Route as ConvitePresencaRouteImport } from './routes/convite_.presenca'
 import { Route as ConvitePresenteRouteImport } from './routes/convite_.presente'
 import { Route as ConviteBebidasRouteImport } from './routes/convite_.bebidas'
 import { Route as GarcomRouteImport } from './routes/garcom'
+import { Route as CatalogoRouteImport } from './routes/catalogo'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,6 +89,11 @@ const GarcomRoute = GarcomRouteImport.update({
   path: '/garcom',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CatalogoRoute = CatalogoRouteImport.update({
+  id: '/catalogo',
+  path: '/catalogo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/convite/presente': typeof ConvitePresenteRoute
   '/convite/bebidas': typeof ConviteBebidasRoute
   '/garcom': typeof GarcomRoute
+  '/catalogo': typeof CatalogoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/convite/presente': typeof ConvitePresenteRoute
   '/convite/bebidas': typeof ConviteBebidasRoute
   '/garcom': typeof GarcomRoute
+  '/catalogo': typeof CatalogoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/convite_/presente': typeof ConvitePresenteRoute
   '/convite_/bebidas': typeof ConviteBebidasRoute
   '/garcom': typeof GarcomRoute
+  '/catalogo': typeof CatalogoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/convite/presente'
     | '/convite/bebidas'
     | '/garcom'
+    | '/catalogo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/convite/presente'
     | '/convite/bebidas'
     | '/garcom'
+    | '/catalogo'
   id:
     | '__root__'
     | '/'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/convite_/presente'
     | '/convite_/bebidas'
     | '/garcom'
+    | '/catalogo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   ConvitePresenteRoute: typeof ConvitePresenteRoute
   ConviteBebidasRoute: typeof ConviteBebidasRoute
   GarcomRoute: typeof GarcomRoute
+  CatalogoRoute: typeof CatalogoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GarcomRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/catalogo': {
+      id: '/catalogo'
+      path: '/catalogo'
+      fullPath: '/catalogo'
+      preLoaderRoute: typeof CatalogoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -309,6 +329,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConvitePresenteRoute: ConvitePresenteRoute,
   ConviteBebidasRoute: ConviteBebidasRoute,
   GarcomRoute: GarcomRoute,
+  CatalogoRoute: CatalogoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -168,9 +168,9 @@ function Convite() {
             { icon: Gift, label: "Dar presente", to: "/convite/presente" },
             { icon: MessageCircleHeart, label: "Felicitações", to: "/convite/felicitacoes" },
             { icon: Camera, label: "Tirar foto", to: "/convite/foto" },
-            { icon: Wine, label: "Pedir bebida", to: "/convite/bebidas" },
+            { icon: Wine, label: "Pedir bebida", to: "/catalogo" },
           ].map(({ icon: Icon, label, to }) => (
-            <Link key={label} to={to as "/convite/foto"} search={{ c: code }} className="glass flex flex-col items-center gap-2 rounded-2xl p-5 transition hover:shadow-gold">
+            <Link key={label} to={to} search={{ c: code }} className="glass flex flex-col items-center gap-2 rounded-2xl p-5 transition hover:shadow-gold">
               <Icon className="text-primary" />
               <span className="text-sm font-semibold">{label}</span>
             </Link>
