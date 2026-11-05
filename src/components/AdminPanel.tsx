@@ -177,6 +177,61 @@ function RsvpBadge({ status }: { status: NonNullable<GuestAdmin["rsvp_status"]> 
   );
 }
 
+function GuestPresenceList({
+  guests,
+  variant,
+  emptyMessage,
+}: {
+  guests: GuestAdmin[];
+  variant: "all" | "entered";
+  emptyMessage: string;
+}) {
+  const col4Label = variant === "all" ? "Presença (convite)" : "Hora de entrada";
+
+  return (
+    <div className="glass overflow-hidden rounded-2xl">
+      <div className="hidden border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground sm:grid sm:grid-cols-[1fr_1fr_1fr_auto] sm:gap-2">
+        <span>Nome</span>
+        <span>Mesa</span>
+        <span>Telemóvel</span>
+        <span className="text-right">{col4Label}</span>
+      </div>
+      <ul className="max-h-[40vh] divide-y divide-border overflow-y-auto text-sm">
+        {guests.map((g) => {
+          const status = g.rsvp_status ?? "pending";
+          return (
+            <li
+              key={g.id}
+              className="flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-center sm:gap-2"
+            >
+              <p className="font-medium">{g.name}</p>
+              <p className="text-muted-foreground sm:text-foreground">{g.table ?? "—"}</p>
+              <p className="font-mono text-xs tracking-wide text-primary sm:text-sm">{g.code}</p>
+              <div className="sm:text-right">
+                {variant === "all" ? (
+                  <RsvpBadge status={status} />
+                ) : (
+                  <span className="font-mono text-xs text-primary">
+                    {g.checked_in_at
+                      ? new Date(g.checked_in_at).toLocaleString("pt-PT", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "—"}
+                  </span>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {!guests.length && <p className="px-4 py-6 text-muted-foreground">{emptyMessage}</p>}
+    </div>
+  );
+}
+
 export function AdminPanel({ onLogout }: AdminPanelProps) {
   const qc = useQueryClient();
   const [section, setSection] = useState<Section>("guests");
@@ -201,7 +256,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     queryKey: ["admin-guests"],
     queryFn: adminListGuests,
     retry: false,
-    refetchInterval: section === "presence" ? 10000 : false,
+    refetchInterval: section === "presence" ? 5000 : false,
   });
 
   const felicQuery = useQuery({
@@ -290,6 +345,11 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     () => filterGuests(allGuests, guestListSearch, guestListRsvpFilter),
     [allGuests, guestListSearch, guestListRsvpFilter],
   );
+
+  const filteredEnteredGuests = useMemo(() => {
+    const entered = allGuests.filter((g) => g.checked_in_at);
+    return filterGuests(entered, guestListSearch, guestListRsvpFilter);
+  }, [allGuests, guestListSearch, guestListRsvpFilter]);
 
   const exportGuestsPdf = async (title: string) => {
     if (!filteredGuests.length) return;
@@ -507,15 +567,14 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
           <div className="max-w-3xl">
             <h2 className="mb-2 text-xl font-semibold">Presenças</h2>
             <p className="mb-6 text-sm text-muted-foreground">
-              Respostas da página «Confirmar presença» no convite. «Presentes» = confirmaram que vão; «Em falta» inclui quem
-              ainda não respondeu e quem disse que não pode.
+              Totais do convite (RSVP) e entradas verificadas na <span className="text-primary">/porta</span>. A lista
+              actualiza automaticamente.
             </p>
             <GuestStatsCards {...presenceStats} />
             <p className="mb-6 text-center text-sm text-muted-foreground">
-              Na porta (check-in):{" "}
+              Entraram na porta:{" "}
               <span className="font-semibold text-primary">{presenceStats.naPorta}</span> de {presenceStats.total}
             </p>
-            <p className="mb-3 text-sm font-medium">Lista de convidados</p>
             <GuestListToolbar
               search={guestListSearch}
               onSearchChange={setGuestListSearch}
@@ -526,43 +585,40 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
               pdfBusy={pdfBusy}
               onDownloadPdf={() => exportGuestsPdf(`Lista de presenças — ${GUEST_PDF_EVENT_NAMES}`)}
             />
-            <div className="glass overflow-hidden rounded-2xl">
-              <div className="hidden border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground sm:grid sm:grid-cols-[1fr_1fr_1fr_auto] sm:gap-2">
-                <span>Nome</span>
-                <span>Mesa</span>
-                <span>Telemóvel</span>
-                <span className="text-right">Presença</span>
-              </div>
-              <ul className="max-h-[55vh] divide-y divide-border overflow-y-auto text-sm">
-                {filteredGuests.map((g) => {
-                  const status = g.rsvp_status ?? "pending";
-                  return (
-                    <li
-                      key={g.id}
-                      className="flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-center sm:gap-2"
-                    >
-                      <p className="font-medium">{g.name}</p>
-                      <p className="text-muted-foreground sm:text-foreground">{g.table ?? "—"}</p>
-                      <p className="font-mono text-xs tracking-wide text-primary sm:text-sm">{g.code}</p>
-                      <div className="flex flex-col items-end gap-1 sm:text-right">
-                        <RsvpBadge status={status} />
-                        {g.checked_in_at && (
-                          <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary">
-                            Na porta
-                          </span>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-              {!allGuests.length && !guestsQuery.isLoading && (
-                <p className="px-4 py-6 text-muted-foreground">Ainda não há convidados registados.</p>
-              )}
-              {allGuests.length > 0 && !filteredGuests.length && (
-                <p className="px-4 py-6 text-muted-foreground">Nenhum convidado corresponde ao filtro.</p>
-              )}
-            </div>
+
+            <section className="mb-10">
+              <p className="mb-3 text-sm font-medium">
+                Lista de convidados{" "}
+                <span className="font-normal text-muted-foreground">({filteredGuests.length})</span>
+              </p>
+              <GuestPresenceList
+                guests={filteredGuests}
+                variant="all"
+                emptyMessage={
+                  allGuests.length && !filteredGuests.length
+                    ? "Nenhum convidado corresponde ao filtro."
+                    : "Ainda não há convidados registados."
+                }
+              />
+            </section>
+
+            <section>
+              <p className="mb-3 text-sm font-medium">
+                Convidados que entraram{" "}
+                <span className="font-normal text-muted-foreground">
+                  ({filteredEnteredGuests.length} de {presenceStats.naPorta})
+                </span>
+              </p>
+              <GuestPresenceList
+                guests={filteredEnteredGuests}
+                variant="entered"
+                emptyMessage={
+                  presenceStats.naPorta && !filteredEnteredGuests.length
+                    ? "Nenhuma entrada corresponde ao filtro."
+                    : "Ainda ninguém entrou pela verificação /porta."
+                }
+              />
+            </section>
           </div>
         )}
 
