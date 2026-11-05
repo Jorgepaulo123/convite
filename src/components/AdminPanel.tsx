@@ -280,7 +280,8 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     const total = guests.length;
     const presentes = guests.filter((g) => g.rsvp_status === "yes").length;
     const emFalta = total - presentes;
-    return { total, presentes, emFalta };
+    const naPorta = guests.filter((g) => g.checked_in_at).length;
+    return { total, presentes, emFalta, naPorta };
   }, [guestsQuery.data]);
 
   const allGuests = guestsQuery.data ?? [];
@@ -510,6 +511,10 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
               ainda não respondeu e quem disse que não pode.
             </p>
             <GuestStatsCards {...presenceStats} />
+            <p className="mb-6 text-center text-sm text-muted-foreground">
+              Na porta (check-in):{" "}
+              <span className="font-semibold text-primary">{presenceStats.naPorta}</span> de {presenceStats.total}
+            </p>
             <p className="mb-3 text-sm font-medium">Lista de convidados</p>
             <GuestListToolbar
               search={guestListSearch}
@@ -539,8 +544,13 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                       <p className="font-medium">{g.name}</p>
                       <p className="text-muted-foreground sm:text-foreground">{g.table ?? "—"}</p>
                       <p className="font-mono text-xs tracking-wide text-primary sm:text-sm">{g.code}</p>
-                      <div className="sm:text-right">
+                      <div className="flex flex-col items-end gap-1 sm:text-right">
                         <RsvpBadge status={status} />
+                        {g.checked_in_at && (
+                          <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary">
+                            Na porta
+                          </span>
+                        )}
                       </div>
                     </li>
                   );
@@ -774,7 +784,11 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
         {section === "screen" && (
           <div className="max-w-2xl">
             <h2 className="mb-6 text-xl font-semibold">Controlo da tela</h2>
-            <p className="mb-4 text-sm text-muted-foreground">Abra /tela no projetor. Brindes chegam por WebSocket em tempo real.</p>
+            <p className="mb-2 text-sm text-muted-foreground">Abra /tela no projetor. Brindes chegam por WebSocket em tempo real.</p>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Entrada na porta: <span className="text-primary">/porta</span> · Tela de presenças:{" "}
+              <span className="text-primary">/tela-presenca</span>
+            </p>
             <div className="grid grid-cols-2 gap-3">
               {MODES.map(({ id, label, icon: I }) => (
                 <button

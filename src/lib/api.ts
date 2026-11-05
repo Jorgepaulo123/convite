@@ -9,6 +9,23 @@ export type GuestAdmin = Guest & {
   id: number;
   contact: string;
   created_at: string;
+  checked_in_at?: string | null;
+};
+
+export type CheckinResult = {
+  ok: boolean;
+  on_list: boolean;
+  name?: string | null;
+  table?: string | null;
+  already_checked_in?: boolean;
+  message: string;
+};
+
+export type AttendanceStats = {
+  total_guests: number;
+  checked_in: number;
+  remaining: number;
+  recent: { name: string; table?: string | null; checked_in_at: string }[];
 };
 
 export type GalleryItem = { id: number; url: string; sort_order: number };
@@ -67,6 +84,21 @@ export async function fetchGuestByCode(code: string): Promise<Guest | undefined>
   const res = await fetch(apiUrl(`/api/guests/by-code/${normalized}`));
   if (res.status === 404) return undefined;
   return parseJson<Guest>(res);
+}
+
+export async function registerDoorCheckin(code: string): Promise<CheckinResult> {
+  const normalized = normalizeGuestCode(code);
+  const res = await fetch(apiUrl(`/api/checkin`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: normalized }),
+  });
+  return parseJson<CheckinResult>(res);
+}
+
+export async function fetchAttendanceStats(): Promise<AttendanceStats> {
+  const res = await fetch(apiUrl(`/api/checkin/stats`));
+  return parseJson<AttendanceStats>(res);
 }
 
 export async function verifyGuestCode(code: string): Promise<Guest> {
