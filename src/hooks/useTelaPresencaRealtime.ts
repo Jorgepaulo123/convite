@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAttendanceStats, type AttendanceStats } from "@/lib/api";
+import { fetchAttendanceStats, type AttendanceStats, type PresentGuest } from "@/lib/api";
 import { connectCheckinWebSocket, type AttendanceCheckinPayload } from "@/lib/checkin-ws";
 
 const POLL_MS = 1500;
@@ -15,6 +15,7 @@ function celebrationKey(name: string, checkedInAt: string) {
 export function useTelaPresencaRealtime() {
   const [present, setPresent] = useState(0);
   const [total, setTotal] = useState(0);
+  const [presentGuests, setPresentGuests] = useState<PresentGuest[]>([]);
   const [celebration, setCelebration] = useState<CelebrationGuest | null>(null);
   const [wsLive, setWsLive] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -45,6 +46,7 @@ export function useTelaPresencaRealtime() {
     (stats: AttendanceStats, celebrateFromPoll: boolean) => {
       setPresent(stats.checked_in);
       setTotal(stats.total_guests);
+      setPresentGuests(stats.present_guests?.length ? stats.present_guests : stats.recent);
       if (celebrateFromPoll) maybeCelebrateFromStats(stats);
     },
     [maybeCelebrateFromStats],
@@ -63,11 +65,17 @@ export function useTelaPresencaRealtime() {
       onStats: (s) => {
         setPresent(s.checked_in);
         setTotal(s.total_guests);
+        void fetchAttendanceStats()
+          .then((full) => setPresentGuests(full.present_guests?.length ? full.present_guests : full.recent))
+          .catch(() => {});
       },
       onCheckin: (event) => {
         setPresent(event.checked_in);
         setTotal(event.total_guests);
         showCelebration(event);
+        void fetchAttendanceStats()
+          .then((full) => setPresentGuests(full.present_guests?.length ? full.present_guests : full.recent))
+          .catch(() => {});
       },
       onOpen: () => setWsLive(true),
       onClose: () => setWsLive(false),
@@ -103,5 +111,5 @@ export function useTelaPresencaRealtime() {
     [],
   );
 
-  return { present, total, celebration, wsLive };
+  return { present, total, presentGuests, celebration, wsLive };
 };

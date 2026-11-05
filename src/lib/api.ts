@@ -21,11 +21,14 @@ export type CheckinResult = {
   message: string;
 };
 
+export type PresentGuest = { name: string; table?: string | null; checked_in_at: string };
+
 export type AttendanceStats = {
   total_guests: number;
   checked_in: number;
   remaining: number;
-  recent: { name: string; table?: string | null; checked_in_at: string }[];
+  recent: PresentGuest[];
+  present_guests?: PresentGuest[];
 };
 
 export type CheckinRosterGuest = {
