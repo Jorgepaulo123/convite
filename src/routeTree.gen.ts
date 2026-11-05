@@ -14,8 +14,8 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ConviteRouteImport } from './routes/convite'
 import { Route as KAdminRouteImport } from './routes/k-admin'
 import { Route as PortaRouteImport } from './routes/porta'
+import { Route as PresencasRouteImport } from './routes/presencas'
 import { Route as TelaRouteImport } from './routes/tela'
-import { Route as TelaPresencaRouteImport } from './routes/tela-presenca'
 import { Route as ConviteFelicitacoesRouteImport } from './routes/convite_.felicitacoes'
 import { Route as ConviteFotoRouteImport } from './routes/convite_.foto'
 import { Route as ConvitePresencaRouteImport } from './routes/convite_.presenca'
@@ -46,14 +46,14 @@ const PortaRoute = PortaRouteImport.update({
   path: '/porta',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PresencasRoute = PresencasRouteImport.update({
+  id: '/presencas',
+  path: '/presencas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TelaRoute = TelaRouteImport.update({
   id: '/tela',
   path: '/tela',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TelaPresencaRoute = TelaPresencaRouteImport.update({
-  id: '/tela-presenca',
-  path: '/tela-presenca',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConviteFelicitacoesRoute = ConviteFelicitacoesRouteImport.update({
@@ -83,8 +83,8 @@ export interface FileRoutesByFullPath {
   '/convite': typeof ConviteRoute
   '/k-admin': typeof KAdminRoute
   '/porta': typeof PortaRoute
+  '/presencas': typeof PresencasRoute
   '/tela': typeof TelaRoute
-  '/tela-presenca': typeof TelaPresencaRoute
   '/convite/felicitacoes': typeof ConviteFelicitacoesRoute
   '/convite/foto': typeof ConviteFotoRoute
   '/convite/presenca': typeof ConvitePresencaRoute
@@ -96,8 +96,8 @@ export interface FileRoutesByTo {
   '/convite': typeof ConviteRoute
   '/k-admin': typeof KAdminRoute
   '/porta': typeof PortaRoute
+  '/presencas': typeof PresencasRoute
   '/tela': typeof TelaRoute
-  '/tela-presenca': typeof TelaPresencaRoute
   '/convite/felicitacoes': typeof ConviteFelicitacoesRoute
   '/convite/foto': typeof ConviteFotoRoute
   '/convite/presenca': typeof ConvitePresencaRoute
@@ -110,8 +110,8 @@ export interface FileRoutesById {
   '/convite': typeof ConviteRoute
   '/k-admin': typeof KAdminRoute
   '/porta': typeof PortaRoute
+  '/presencas': typeof PresencasRoute
   '/tela': typeof TelaRoute
-  '/tela-presenca': typeof TelaPresencaRoute
   '/convite_/felicitacoes': typeof ConviteFelicitacoesRoute
   '/convite_/foto': typeof ConviteFotoRoute
   '/convite_/presenca': typeof ConvitePresencaRoute
@@ -125,8 +125,8 @@ export interface FileRouteTypes {
     | '/convite'
     | '/k-admin'
     | '/porta'
+    | '/presencas'
     | '/tela'
-    | '/tela-presenca'
     | '/convite/felicitacoes'
     | '/convite/foto'
     | '/convite/presenca'
@@ -138,8 +138,8 @@ export interface FileRouteTypes {
     | '/convite'
     | '/k-admin'
     | '/porta'
+    | '/presencas'
     | '/tela'
-    | '/tela-presenca'
     | '/convite/felicitacoes'
     | '/convite/foto'
     | '/convite/presenca'
@@ -151,8 +151,8 @@ export interface FileRouteTypes {
     | '/convite'
     | '/k-admin'
     | '/porta'
+    | '/presencas'
     | '/tela'
-    | '/tela-presenca'
     | '/convite_/felicitacoes'
     | '/convite_/foto'
     | '/convite_/presenca'
@@ -165,8 +165,8 @@ export interface RootRouteChildren {
   ConviteRoute: typeof ConviteRoute
   KAdminRoute: typeof KAdminRoute
   PortaRoute: typeof PortaRoute
+  PresencasRoute: typeof PresencasRoute
   TelaRoute: typeof TelaRoute
-  TelaPresencaRoute: typeof TelaPresencaRoute
   ConviteFelicitacoesRoute: typeof ConviteFelicitacoesRoute
   ConviteFotoRoute: typeof ConviteFotoRoute
   ConvitePresencaRoute: typeof ConvitePresencaRoute
@@ -210,18 +210,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/presencas': {
+      id: '/presencas'
+      path: '/presencas'
+      fullPath: '/presencas'
+      preLoaderRoute: typeof PresencasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tela': {
       id: '/tela'
       path: '/tela'
       fullPath: '/tela'
       preLoaderRoute: typeof TelaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tela-presenca': {
-      id: '/tela-presenca'
-      path: '/tela-presenca'
-      fullPath: '/tela-presenca'
-      preLoaderRoute: typeof TelaPresencaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/convite_/felicitacoes': {
@@ -261,8 +261,8 @@ const rootRouteChildren: RootRouteChildren = {
   ConviteRoute: ConviteRoute,
   KAdminRoute: KAdminRoute,
   PortaRoute: PortaRoute,
+  PresencasRoute: PresencasRoute,
   TelaRoute: TelaRoute,
-  TelaPresencaRoute: TelaPresencaRoute,
   ConviteFelicitacoesRoute: ConviteFelicitacoesRoute,
   ConviteFotoRoute: ConviteFotoRoute,
   ConvitePresencaRoute: ConvitePresencaRoute,

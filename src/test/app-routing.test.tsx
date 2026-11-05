@@ -14,4 +14,11 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+
+  it("keeps /tela (brindes) separate from /presencas (contador)", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    expect(router.matchRoutes("/tela").at(-1)?.routeId).toBe("/tela");
+    expect(router.matchRoutes("/presencas").at(-1)?.routeId).toBe("/presencas");
+  });
 });

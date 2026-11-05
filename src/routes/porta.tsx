@@ -29,7 +29,31 @@ function PortaPage() {
   const [phone, setPhone] = useState("");
   const [listSearch, setListSearch] = useState("");
   const [busy, setBusy] = useState(false);
+  const [markingCode, setMarkingCode] = useState<string | null>(null);
   const [result, setResult] = useState<CheckinResult | null>(null);
+
+  const refreshLists = async () => {
+    await qc.invalidateQueries({ queryKey: ["checkin-roster"] });
+    await qc.invalidateQueries({ queryKey: ["attendance-stats"] });
+  };
+
+  const markEntry = async (code: string) => {
+    setMarkingCode(code);
+    setResult(null);
+    try {
+      const res = await registerDoorCheckin(code);
+      setResult(res);
+      await refreshLists();
+    } catch (e) {
+      setResult({
+        ok: false,
+        on_list: false,
+        message: e instanceof Error ? e.message : "Erro ao marcar entrada.",
+      });
+    } finally {
+      setMarkingCode(null);
+    }
+  };
 
   const rosterQuery = useQuery({
     queryKey: ["checkin-roster"],
@@ -73,8 +97,7 @@ function PortaPage() {
       const res = await registerDoorCheckin(normalized);
       setResult(res);
       if (res.ok) setPhone("");
-      await qc.invalidateQueries({ queryKey: ["checkin-roster"] });
-      await qc.invalidateQueries({ queryKey: ["attendance-stats"] });
+      await refreshLists();
     } catch (e) {
       setResult({
         ok: false,
@@ -163,6 +186,9 @@ function PortaPage() {
                     : "Sem convidados na lista."
               }
               showEntry={false}
+              showMarkButton
+              markingCode={markingCode}
+              onMarkEntry={markEntry}
             />
           </section>
           <section>
@@ -185,7 +211,7 @@ function PortaPage() {
         </div>
 
         <p className="mt-8 text-center text-xs text-muted-foreground">
-          Tela de totais: <span className="text-primary">/tela-presenca</span>
+          Tela de totais: <span className="text-primary">/presencas</span>
         </p>
       </div>
     </main>
@@ -196,24 +222,52 @@ function PortaGuestList({
   guests,
   emptyMessage,
   showEntry,
+  showMarkButton,
+  markingCode,
+  onMarkEntry,
 }: {
   guests: { name: string; table?: string | null; code: string; checked_in_at?: string | null }[];
   emptyMessage: string;
   showEntry: boolean;
+  showMarkButton?: boolean;
+  markingCode?: string | null;
+  onMarkEntry?: (code: string) => void;
 }) {
   return (
     <div className="glass overflow-hidden rounded-2xl">
       <ul className="max-h-[50vh] divide-y divide-border overflow-y-auto text-sm lg:max-h-[55vh]">
-        {guests.map((g) => (
-          <li key={`${g.code}-${g.checked_in_at ?? "pending"}`} className="px-4 py-3">
-            <p className="font-medium">{g.name}</p>
-            <p className="font-mono text-xs text-primary">{g.code}</p>
-            {g.table && <p className="text-xs text-muted-foreground">{g.table}</p>}
-            {showEntry && g.checked_in_at && (
-              <p className="mt-1 text-xs text-gold-soft">Entrada: {formatEntry(g.checked_in_at)}</p>
-            )}
-          </li>
-        ))}
+        {guests.map((g) => {
+          const entered = !!g.checked_in_at;
+          const marking = markingCode === g.code;
+          return (
+            <li
+              key={`${g.code}-${g.checked_in_at ?? "pending"}`}
+              className="flex items-start justify-between gap-3 px-4 py-3"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{g.name}</p>
+                <p className="font-mono text-xs text-primary">{g.code}</p>
+                {g.table && <p className="text-xs text-muted-foreground">{g.table}</p>}
+                {showEntry && g.checked_in_at && (
+                  <p className="mt-1 text-xs text-gold-soft">Entrada: {formatEntry(g.checked_in_at)}</p>
+                )}
+                {showMarkButton && entered && (
+                  <p className="mt-1 text-xs text-primary">Já entrou</p>
+                )}
+              </div>
+              {showMarkButton && !entered && onMarkEntry && (
+                <button
+                  type="button"
+                  disabled={!!markingCode}
+                  onClick={() => onMarkEntry(g.code)}
+                  className="bg-gold-gradient shrink-0 rounded-full px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  {marking ? "…" : "Marcar entrada"}
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
       {!guests.length && <p className="px-4 py-6 text-center text-muted-foreground">{emptyMessage}</p>}
     </div>

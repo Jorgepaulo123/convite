@@ -840,10 +840,12 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
         {section === "screen" && (
           <div className="max-w-2xl">
             <h2 className="mb-6 text-xl font-semibold">Controlo da tela</h2>
-            <p className="mb-2 text-sm text-muted-foreground">Abra /tela no projetor. Brindes chegam por WebSocket em tempo real.</p>
+            <p className="mb-2 text-sm text-muted-foreground">
+              <span className="text-primary">/tela</span> — felicitações e selfies (tela gigante). Brindes em tempo real.
+            </p>
             <p className="mb-4 text-sm text-muted-foreground">
-              Entrada na porta: <span className="text-primary">/porta</span> · Tela de presenças:{" "}
-              <span className="text-primary">/tela-presenca</span>
+              Entrada na porta: <span className="text-primary">/porta</span> · Contador de presentes:{" "}
+              <span className="text-primary">/presencas</span>
             </p>
             <div className="grid grid-cols-2 gap-3">
               {MODES.map(({ id, label, icon: I }) => (
