@@ -55,6 +55,7 @@ import {
   RSVP_FILTER_LABEL,
   type GuestRsvpFilter,
 } from "@/lib/guest-list-utils";
+import { DRINK_CATEGORIES, DRINK_CATEGORY_LABEL, type DrinkCategory } from "@/lib/drink-categories";
 
 const MODES: { id: ScreenMode; label: string; icon: typeof Video }[] = [
   { id: "live", label: "Ao vivo", icon: Video },
@@ -261,9 +262,11 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
   const [drinkName, setDrinkName] = useState("");
   const [drinkQty, setDrinkQty] = useState("");
   const [drinkPhoto, setDrinkPhoto] = useState<File | null>(null);
+  const [drinkCategory, setDrinkCategory] = useState<DrinkCategory>("CERVEJA");
   const [editingDrinkId, setEditingDrinkId] = useState<number | null>(null);
   const [editDrinkName, setEditDrinkName] = useState("");
   const [editDrinkQty, setEditDrinkQty] = useState("");
+  const [editDrinkCategory, setEditDrinkCategory] = useState<DrinkCategory>("CERVEJA");
 
   const guestsQuery = useQuery({
     queryKey: ["admin-guests"],
@@ -528,13 +531,13 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
       return;
     }
     try {
-      await adminCreateDrink(drinkName.trim(), qty, drinkPhoto ?? undefined);
+      await adminCreateDrink(drinkName.trim(), qty, drinkCategory, drinkPhoto ?? undefined);
       setDrinkName("");
       setDrinkQty("");
       setDrinkPhoto(null);
       setMsg("Bebida cadastrada.");
       qc.invalidateQueries({ queryKey: ["admin-drinks"] });
-      qc.invalidateQueries({ queryKey: ["drinks-catalog"] });
+      void qc.invalidateQueries({ queryKey: ["drinks-catalog"] });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro");
     }
@@ -548,7 +551,11 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
       return;
     }
     try {
-      await adminUpdateDrink(id, { name: editDrinkName.trim(), quantity: qty });
+      await adminUpdateDrink(id, {
+        name: editDrinkName.trim(),
+        quantity: qty,
+        category: editDrinkCategory,
+      });
       setEditingDrinkId(null);
       setMsg("Bebida actualizada.");
       qc.invalidateQueries({ queryKey: ["admin-drinks"] });
@@ -814,6 +821,17 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                 <li key={d.id} className="glass rounded-xl px-3 py-3 text-sm">
                   {editingDrinkId === d.id ? (
                     <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={editDrinkCategory}
+                        onChange={(e) => setEditDrinkCategory(e.target.value as DrinkCategory)}
+                        className="rounded-lg border border-input bg-transparent px-2 py-1.5 text-sm"
+                      >
+                        {DRINK_CATEGORIES.map((c) => (
+                          <option key={c} value={c}>
+                            {DRINK_CATEGORY_LABEL[c]}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         value={editDrinkName}
                         onChange={(e) => setEditDrinkName(e.target.value)}
@@ -848,6 +866,9 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                           </div>
                         )}
                         <div className="min-w-0">
+                          <span className="mr-2 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                            {d.category ? DRINK_CATEGORY_LABEL[d.category as DrinkCategory] ?? d.category : "—"}
+                          </span>
                           <span className="font-medium">{d.name}</span>
                           <span className="ml-2 text-muted-foreground tabular-nums">Stock: {d.quantity}</span>
                           {!d.active && <span className="ml-2 text-xs text-destructive">(inactiva)</span>}
@@ -883,6 +904,11 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                             setEditingDrinkId(d.id);
                             setEditDrinkName(d.name);
                             setEditDrinkQty(String(d.quantity));
+                            setEditDrinkCategory(
+                              DRINK_CATEGORIES.includes(d.category as DrinkCategory)
+                                ? (d.category as DrinkCategory)
+                                : "CERVEJA",
+                            );
                           }}
                         >
                           Editar
@@ -929,11 +955,25 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
             </ul>
             <form onSubmit={addDrink} className="glass space-y-3 rounded-2xl p-5">
               <p className="text-sm font-medium">Nova bebida</p>
+              <label className="block">
+                <span className="mb-1 block text-xs text-muted-foreground">Categoria</span>
+                <select
+                  value={drinkCategory}
+                  onChange={(e) => setDrinkCategory(e.target.value as DrinkCategory)}
+                  className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+                >
+                  {DRINK_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {DRINK_CATEGORY_LABEL[c]}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <input
                 required
                 value={drinkName}
                 onChange={(e) => setDrinkName(e.target.value)}
-                placeholder="Nome (ex: Água, Vinho tinto)"
+                placeholder="Nome (ex: Cuca, Tinto reserva)"
                 className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
               />
               <input

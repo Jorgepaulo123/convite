@@ -1,7 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wine, X } from "lucide-react";
+import { ArrowLeft, Wine, X } from "lucide-react";
 import { useState } from "react";
 import { fetchDrinksCatalog, fetchGuestByCode, mediaUrl, submitDrinkOrder, type Drink } from "@/lib/api";
+import {
+  DRINK_CATEGORIES,
+  DRINK_CATEGORY_LABEL,
+  type DrinkCategory,
+} from "@/lib/drink-categories";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const btn = "bg-gold-gradient w-full rounded-full py-3 font-semibold text-primary-foreground shadow-gold disabled:opacity-50";
@@ -38,23 +43,43 @@ function DrinkCard({ drink, onSelect }: { drink: Drink; onSelect: () => void }) 
   );
 }
 
+function CategoryPicker({ onSelect }: { onSelect: (c: DrinkCategory) => void }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {DRINK_CATEGORIES.map((cat) => (
+        <button
+          key={cat}
+          type="button"
+          onClick={() => onSelect(cat)}
+          className="glass rounded-2xl border border-primary/20 px-6 py-8 text-center transition hover:border-primary/50 hover:shadow-gold"
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">{cat}</p>
+          <p className="mt-2 text-xl font-semibold text-foreground">{DRINK_CATEGORY_LABEL[cat]}</p>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 type DrinkCatalogProps = {
   code: string;
   guestName?: string;
   showBackToInvite?: boolean;
-  inviteCode?: string;
 };
 
 export function DrinkCatalog({ code, guestName, showBackToInvite }: DrinkCatalogProps) {
   const qc = useQueryClient();
+  const [category, setCategory] = useState<DrinkCategory | null>(null);
+
   const guestQuery = useQuery({
     queryKey: ["guest", code],
     queryFn: () => fetchGuestByCode(code),
   });
 
   const drinksQuery = useQuery({
-    queryKey: ["drinks-catalog"],
-    queryFn: fetchDrinksCatalog,
+    queryKey: ["drinks-catalog", category],
+    queryFn: () => fetchDrinksCatalog(category!),
+    enabled: !!category,
     refetchInterval: 8000,
   });
 
@@ -76,7 +101,7 @@ export function DrinkCatalog({ code, guestName, showBackToInvite }: DrinkCatalog
       await submitDrinkOrder(code, selected.id, qty);
       setDone(true);
       setSelected(null);
-      await qc.invalidateQueries({ queryKey: ["drinks-catalog"] });
+      await qc.invalidateQueries({ queryKey: ["drinks-catalog", category] });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro ao enviar pedido.");
     } finally {
@@ -84,11 +109,11 @@ export function DrinkCatalog({ code, guestName, showBackToInvite }: DrinkCatalog
     }
   };
 
-  if (guestQuery.isLoading || drinksQuery.isLoading) {
+  if (guestQuery.isLoading) {
     return (
       <main className="mx-auto min-h-screen max-w-lg px-4 py-8 text-center">
         <ThemeToggle />
-        <p className="text-muted-foreground">A carregar catálogo…</p>
+        <p className="text-muted-foreground">A carregar…</p>
       </main>
     );
   }
@@ -109,40 +134,72 @@ export function DrinkCatalog({ code, guestName, showBackToInvite }: DrinkCatalog
         <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Evento</p>
         <h1 className="font-script text-gold-gradient mt-1 text-5xl">Catálogo de bebidas</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          Olá, <span className="font-semibold text-foreground">{name}</span>. Toque na bebida para pedir.
+          Olá, <span className="font-semibold text-foreground">{name}</span>.
+          {category
+            ? ` — ${DRINK_CATEGORY_LABEL[category]}`
+            : " Escolha a categoria."}
         </p>
-        {showBackToInvite && (
+        {showBackToInvite && !category && (
           <a href={`/convite?c=${encodeURIComponent(code)}`} className="mt-2 inline-block text-sm text-primary underline">
             Voltar ao convite
           </a>
         )}
       </header>
 
-      {done && (
-        <p className="glass mb-6 rounded-2xl p-4 text-center text-sm text-primary">
-          Pedido enviado! O garçom irá entregar em breve.
-        </p>
+      {!category && (
+        <>
+          <p className="mb-4 text-center text-sm text-muted-foreground">Seleccione uma categoria para ver as bebidas.</p>
+          <CategoryPicker onSelect={setCategory} />
+        </>
       )}
 
-      {!drinks.length && (
-        <p className="glass rounded-2xl p-8 text-center text-muted-foreground">O catálogo será disponibilizado em breve.</p>
-      )}
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {drinks.map((d) => (
-          <DrinkCard
-            key={d.id}
-            drink={d}
-            onSelect={() => {
-              if (d.quantity <= 0) return;
-              setSelected(d);
-              setQty(1);
-              setErr("");
+      {category && (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setCategory(null);
+              setSelected(null);
               setDone(false);
             }}
-          />
-        ))}
-      </div>
+            className="glass mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-primary"
+          >
+            <ArrowLeft size={16} /> Categorias
+          </button>
+
+          {drinksQuery.isLoading && (
+            <p className="text-center text-muted-foreground">A carregar bebidas…</p>
+          )}
+
+          {done && (
+            <p className="glass mb-6 rounded-2xl p-4 text-center text-sm text-primary">
+              Pedido enviado! O garçom irá entregar em breve.
+            </p>
+          )}
+
+          {!drinksQuery.isLoading && !drinks.length && (
+            <p className="glass rounded-2xl p-8 text-center text-muted-foreground">
+              Ainda não há bebidas nesta categoria.
+            </p>
+          )}
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {drinks.map((d) => (
+              <DrinkCard
+                key={d.id}
+                drink={d}
+                onSelect={() => {
+                  if (d.quantity <= 0) return;
+                  setSelected(d);
+                  setQty(1);
+                  setErr("");
+                  setDone(false);
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       {selected && (
         <div

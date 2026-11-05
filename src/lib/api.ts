@@ -1,3 +1,5 @@
+import type { DrinkCategory } from "@/lib/drink-categories";
+
 export type Guest = {
   code: string;
   name: string;
@@ -51,6 +53,7 @@ export type ProgramItem = { id: number; title: string; time: string; sort_order:
 export type Drink = {
   id: number;
   name: string;
+  category: DrinkCategory;
   quantity: number;
   active: boolean;
   sort_order: number;
@@ -304,8 +307,9 @@ export async function fetchProgram(): Promise<ProgramItem[]> {
   return parseJson<ProgramItem[]>(res);
 }
 
-export async function fetchDrinksCatalog(): Promise<Drink[]> {
-  const res = await fetch(apiUrl(`/api/drinks`));
+export async function fetchDrinksCatalog(category?: DrinkCategory): Promise<Drink[]> {
+  const q = category ? `?category=${encodeURIComponent(category)}` : "";
+  const res = await fetch(apiUrl(`/api/drinks${q}`));
   return parseJson<Drink[]>(res);
 }
 
@@ -339,10 +343,16 @@ export async function adminListDrinks(): Promise<Drink[]> {
   return parseJson<Drink[]>(res);
 }
 
-export async function adminCreateDrink(name: string, quantity: number, photo?: File) {
+export async function adminCreateDrink(
+  name: string,
+  quantity: number,
+  category: DrinkCategory,
+  photo?: File,
+) {
   const fd = new FormData();
   fd.append("name", name);
   fd.append("quantity", String(quantity));
+  fd.append("category", category);
   if (photo) fd.append("file", photo);
   const res = await fetch(apiUrl(`/api/admin/drinks`), {
     method: "POST",
@@ -365,7 +375,7 @@ export async function adminUploadDrinkPhoto(id: number, photo: File) {
 
 export async function adminUpdateDrink(
   id: number,
-  patch: { name?: string; quantity?: number; active?: boolean },
+  patch: { name?: string; category?: DrinkCategory; quantity?: number; active?: boolean },
 ) {
   const res = await fetch(apiUrl(`/api/admin/drinks/${id}`), {
     method: "PATCH",
