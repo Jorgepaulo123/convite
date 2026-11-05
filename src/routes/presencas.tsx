@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Armchair, CheckCircle2 } from "lucide-react";
-import { useMemo } from "react";
-import { useTelaPresencaRealtime } from "@/hooks/useTelaPresencaRealtime";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTelaPresencaRealtime, type CelebrationGuest } from "@/hooks/useTelaPresencaRealtime";
 import type { PresentGuest } from "@/lib/api";
 
 /** Tela do contador de presenças (porta). Não confundir com `/tela` (felicitações e selfies). */
@@ -42,39 +42,114 @@ function PresentRow({
   return (
     <li
       style={{ animationDelay: `${Math.min(index, 12) * 40}ms` }}
-      className={`animate-in fade-in slide-in-from-left-4 relative grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-4 rounded-2xl border px-5 py-4 duration-500 sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-6 ${
+      className={`animate-in fade-in slide-in-from-left-4 relative flex items-center justify-between gap-6 rounded-2xl border px-5 py-4 duration-500 sm:px-6 ${
         highlighted
-          ? "border-primary bg-gold-gradient/25 shadow-[0_0_40px_-8px_hsl(var(--primary))] ring-2 ring-primary/60"
+          ? "presenca-row-glow border-primary bg-gold-gradient/25 ring-2 ring-primary/60"
           : "border-white/10 bg-white/[0.04] backdrop-blur-md"
       }`}
     >
-      <time
-        dateTime={guest.checked_in_at}
-        className={`font-mono text-xl font-semibold tabular-nums sm:text-2xl ${
-          highlighted ? "text-primary" : "text-gold-soft"
-        }`}
-      >
-        {time}
-      </time>
       <p
-        className={`text-left text-lg font-semibold leading-snug sm:text-xl ${
+        className={`min-w-0 flex-1 text-left text-lg font-semibold leading-snug sm:text-xl ${
           highlighted ? "text-secondary-foreground" : "text-secondary-foreground/95"
         }`}
       >
         {guest.name}
       </p>
+      <time
+        dateTime={guest.checked_in_at}
+        className={`shrink-0 font-mono text-xl font-semibold tabular-nums sm:text-2xl ${
+          highlighted ? "text-primary" : "text-gold-soft"
+        }`}
+      >
+        {time}
+      </time>
     </li>
   );
 }
 
+type OverlayPhase = "hidden" | "enter" | "show" | "leave";
+
+function CelebrationOverlay({ guest, phase }: { guest: CelebrationGuest; phase: OverlayPhase }) {
+  if (phase === "hidden") return null;
+
+  const backdropClass =
+    phase === "leave" ? "presenca-backdrop-out" : phase === "enter" ? "presenca-backdrop-in" : "opacity-100";
+  const cardClass =
+    phase === "leave" ? "presenca-card-out" : phase === "enter" ? "presenca-card-in" : "presenca-card-show";
+  const nameClass = phase === "show" || phase === "enter" ? "presenca-name-in" : "";
+
+  return (
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-8 backdrop-blur-md ${backdropClass}`}
+      aria-live="polite"
+    >
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {SPARKS.map((s, i) => (
+          <span
+            key={`${s}-${i}`}
+            className="presenca-spark absolute text-4xl opacity-80"
+            style={{
+              left: `${10 + ((i * 17) % 80)}%`,
+              top: `${8 + ((i * 23) % 70)}%`,
+              animationDelay: `${i * 0.12}s`,
+            }}
+          >
+            {s}
+          </span>
+        ))}
+      </div>
+      <div
+        className={`relative max-w-2xl rounded-[2rem] border border-primary/50 bg-gold-gradient/20 px-10 py-14 text-center shadow-2xl ring-2 ring-primary ${cardClass}`}
+      >
+        <CheckCircle2 className="presenca-icon-in mx-auto mb-6 text-primary" size={72} strokeWidth={1.5} />
+        <p className="presenca-sub-in text-sm font-semibold uppercase tracking-[0.4em] text-gold-soft">Bem-vindo(a)</p>
+        <p
+          key={guest.name}
+          className={`font-script text-gold-gradient mt-4 text-[clamp(2.5rem,8vw,5rem)] leading-tight ${nameClass}`}
+        >
+          {guest.name}
+        </p>
+        {guest.table && (
+          <p className="presenca-sub-in mt-4 flex items-center justify-center gap-2 text-lg tracking-wide text-gold-soft/90">
+            <Armchair size={20} />
+            {guest.table}
+          </p>
+        )}
+        <p className="presenca-sub-in mt-8 text-sm uppercase tracking-widest text-primary">Presença confirmada</p>
+      </div>
+    </div>
+  );
+}
+
+const OVERLAY_LEAVE_MS = 720;
+
 function PresencasTelaPage() {
   const { presentGuests, celebration, wsLive } = useTelaPresencaRealtime();
+  const celebrationSnapshot = useRef<CelebrationGuest | null>(null);
+  const [overlayPhase, setOverlayPhase] = useState<OverlayPhase>("hidden");
+
+  useEffect(() => {
+    if (celebration) {
+      celebrationSnapshot.current = celebration;
+      setOverlayPhase("enter");
+      const show = window.setTimeout(() => setOverlayPhase("show"), 480);
+      return () => window.clearTimeout(show);
+    }
+    if (!celebrationSnapshot.current) return;
+    setOverlayPhase("leave");
+    const hide = window.setTimeout(() => {
+      celebrationSnapshot.current = null;
+      setOverlayPhase("hidden");
+    }, OVERLAY_LEAVE_MS);
+    return () => window.clearTimeout(hide);
+  }, [celebration]);
 
   const highlightKey = useMemo(() => {
-    if (!celebration) return null;
-    const match = presentGuests.find((g) => g.name === celebration.name);
-    return match ? guestKey(match) : celebration.name;
-  }, [celebration, presentGuests]);
+    const active = celebration ?? celebrationSnapshot.current;
+    if (!active) return null;
+    const match = presentGuests.find((g) => g.name === active.name);
+    return match ? guestKey(match) : active.name;
+  }, [celebration, presentGuests, overlayPhase]);
 
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#070708] text-secondary-foreground">
@@ -104,11 +179,11 @@ function PresencasTelaPage() {
 
             {presentGuests.length > 0 && (
               <div
-                className="mb-2 grid grid-cols-[5.5rem_minmax(0,1fr)] gap-4 px-5 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-6"
+                className="mb-2 flex items-center justify-between gap-4 px-5 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:px-6"
                 aria-hidden
               >
-                <span>Hora</span>
                 <span>Nome</span>
+                <span>Hora</span>
               </div>
             )}
 
@@ -138,41 +213,58 @@ function PresencasTelaPage() {
         </section>
       </div>
 
-      {celebration && (
-        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-8 backdrop-blur-md duration-300">
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            {SPARKS.map((s, i) => (
-              <span
-                key={`${s}-${i}`}
-                className="animate-bounce absolute text-4xl opacity-80"
-                style={{
-                  left: `${10 + ((i * 17) % 80)}%`,
-                  top: `${8 + ((i * 23) % 70)}%`,
-                  animationDelay: `${i * 0.15}s`,
-                }}
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-          <div className="animate-in zoom-in-95 relative max-w-2xl rounded-[2rem] border border-primary/50 bg-gold-gradient/20 px-10 py-14 text-center shadow-2xl ring-2 ring-primary duration-500">
-            <CheckCircle2 className="mx-auto mb-6 text-primary" size={72} strokeWidth={1.5} />
-            <p className="text-sm font-semibold uppercase tracking-[0.4em] text-gold-soft">Bem-vindo(a)</p>
-            <p className="font-script text-gold-gradient mt-4 text-[clamp(2.5rem,8vw,5rem)] leading-tight">
-              {celebration.name}
-            </p>
-            {celebration.table && (
-              <p className="mt-4 flex items-center justify-center gap-2 text-lg tracking-wide text-gold-soft/90">
-                <Armchair size={20} />
-                {celebration.table}
-              </p>
-            )}
-            <p className="mt-8 text-sm uppercase tracking-widest text-primary">Presença confirmada</p>
-          </div>
-        </div>
+      {celebrationSnapshot.current && overlayPhase !== "hidden" && (
+        <CelebrationOverlay guest={celebrationSnapshot.current} phase={overlayPhase} />
       )}
 
       <style>{`
+        @keyframes presenca-backdrop-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes presenca-backdrop-out {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+        @keyframes presenca-card-in {
+          0% { opacity: 0; transform: scale(0.82) translateY(28px); }
+          70% { opacity: 1; transform: scale(1.03) translateY(0); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes presenca-card-out {
+          from { opacity: 1; transform: scale(1) translateY(0); }
+          to { opacity: 0; transform: scale(0.9) translateY(-20px); }
+        }
+        @keyframes presenca-name-in {
+          0% { opacity: 0; transform: translateY(40px) scale(0.92); filter: blur(10px); }
+          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        @keyframes presenca-icon-in {
+          from { opacity: 0; transform: scale(0.5) rotate(-12deg); }
+          to { opacity: 1; transform: scale(1) rotate(0); }
+        }
+        @keyframes presenca-sub-in {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes presenca-spark-float {
+          0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
+          50% { transform: translateY(-12px) scale(1.08); opacity: 1; }
+        }
+        @keyframes presenca-row-glow-pulse {
+          0%, 100% { box-shadow: 0 0 32px -6px hsl(var(--primary) / 0.55); }
+          50% { box-shadow: 0 0 48px -4px hsl(var(--primary) / 0.85); }
+        }
+        .presenca-backdrop-in { animation: presenca-backdrop-in 0.45s ease-out forwards; }
+        .presenca-backdrop-out { animation: presenca-backdrop-out 0.65s ease-in forwards; }
+        .presenca-card-in { animation: presenca-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .presenca-card-out { animation: presenca-card-out 0.65s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .presenca-card-show { opacity: 1; transform: scale(1); }
+        .presenca-name-in { animation: presenca-name-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+        .presenca-icon-in { animation: presenca-icon-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .presenca-sub-in { animation: presenca-sub-in 0.5s ease-out 0.25s both; }
+        .presenca-spark { animation: presenca-spark-float 2.2s ease-in-out infinite; }
+        .presenca-row-glow { animation: presenca-row-glow-pulse 1.8s ease-in-out infinite; }
         .presentes-scroll {
           scrollbar-width: thin;
           scrollbar-color: hsl(var(--primary) / 0.35) transparent;
