@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Armchair, CheckCircle2, Sparkles } from "lucide-react";
+import { Armchair, CheckCircle2 } from "lucide-react";
 import { useMemo } from "react";
 import { useTelaPresencaRealtime } from "@/hooks/useTelaPresencaRealtime";
 import type { PresentGuest } from "@/lib/api";
@@ -21,14 +21,11 @@ function guestKey(g: PresentGuest) {
   return `${g.name}|${g.checked_in_at}`;
 }
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  return (parts[0]?.[0] ?? "?").toUpperCase();
-}
-
-function formatEntryTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
+function formatEntryTime(iso: string | undefined) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
 }
 
 function PresentRow({
@@ -40,48 +37,38 @@ function PresentRow({
   index: number;
   highlighted: boolean;
 }) {
+  const time = formatEntryTime(guest.checked_in_at);
+
   return (
     <li
       style={{ animationDelay: `${Math.min(index, 12) * 40}ms` }}
-      className={`group animate-in fade-in slide-in-from-left-4 fill-mode-both relative flex items-center gap-4 rounded-2xl border px-5 py-4 duration-500 ${
+      className={`animate-in fade-in slide-in-from-left-4 relative grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-4 rounded-2xl border px-5 py-4 duration-500 sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-6 ${
         highlighted
           ? "border-primary bg-gold-gradient/25 shadow-[0_0_40px_-8px_hsl(var(--primary))] ring-2 ring-primary/60"
-          : "border-white/10 bg-white/[0.04] backdrop-blur-md hover:border-primary/30 hover:bg-white/[0.07]"
+          : "border-white/10 bg-white/[0.04] backdrop-blur-md"
       }`}
     >
-      <div
-        className={`grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-lg font-bold ${
-          highlighted ? "bg-gold-gradient text-primary-foreground" : "bg-primary/15 text-primary"
+      <time
+        dateTime={guest.checked_in_at}
+        className={`font-mono text-xl font-semibold tabular-nums sm:text-2xl ${
+          highlighted ? "text-primary" : "text-gold-soft"
         }`}
       >
-        {initials(guest.name)}
-      </div>
-      <div className="min-w-0 flex-1 text-left">
-        <p className="truncate text-lg font-semibold tracking-tight text-secondary-foreground">{guest.name}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gold-soft/80">
-          <span className="tabular-nums">{formatEntryTime(guest.checked_in_at)}</span>
-          {guest.table && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-0.5 font-medium text-primary">
-              <Armchair size={12} />
-              {guest.table}
-            </span>
-          )}
-        </div>
-      </div>
-      <CheckCircle2
-        className={`shrink-0 ${highlighted ? "text-primary" : "text-primary/40 group-hover:text-primary/70"}`}
-        size={22}
-        strokeWidth={1.75}
-      />
-      {highlighted && (
-        <Sparkles className="absolute -right-1 -top-1 text-primary animate-pulse" size={18} aria-hidden />
-      )}
+        {time}
+      </time>
+      <p
+        className={`text-left text-lg font-semibold leading-snug sm:text-xl ${
+          highlighted ? "text-secondary-foreground" : "text-secondary-foreground/95"
+        }`}
+      >
+        {guest.name}
+      </p>
     </li>
   );
 }
 
 function PresencasTelaPage() {
-  const { present, total, presentGuests, celebration, wsLive } = useTelaPresencaRealtime();
+  const { present, presentGuests, celebration, wsLive } = useTelaPresencaRealtime();
 
   const highlightKey = useMemo(() => {
     if (!celebration) return null;
@@ -124,24 +111,23 @@ function PresencasTelaPage() {
               >
                 {present}
               </p>
-              <p className="mt-3 text-sm tracking-widest text-gold-soft/80">
-                de {total} convidados
-              </p>
-              <div className="mt-6 h-px w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-              <p className="mt-4 text-xs uppercase tracking-[0.25em] text-muted-foreground">Entrada na porta</p>
             </div>
           </aside>
 
           <section className="flex min-h-0 flex-col">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-gold-soft">
-                <Sparkles size={16} className="text-primary" />
-                Quem já chegou
-              </h2>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs tabular-nums text-muted-foreground">
-                {presentGuests.length} na lista
-              </span>
-            </div>
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-gold-soft">
+              Convidados
+            </h2>
+
+            {presentGuests.length > 0 && (
+              <div
+                className="mb-2 grid grid-cols-[5.5rem_minmax(0,1fr)] gap-4 px-5 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-6"
+                aria-hidden
+              >
+                <span>Hora</span>
+                <span>Nome</span>
+              </div>
+            )}
 
             <div className="presentes-scroll relative min-h-[280px] flex-1 overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 p-4 md:p-5">
               <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-[#070708] to-transparent" />
