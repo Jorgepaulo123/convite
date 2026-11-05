@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, UserX } from "lucide-react";
 import { useMemo, useState } from "react";
-import { fetchCheckinRoster, registerDoorCheckin, type CheckinResult } from "@/lib/api";
+import { fetchCheckinRoster, registerDoorCheckin, unregisterDoorCheckin, type CheckinResult } from "@/lib/api";
 import { GUEST_CODE_MAX_LEN, isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 
 export const Route = createFileRoute("/porta")({
@@ -30,6 +30,7 @@ function PortaPage() {
   const [listSearch, setListSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [markingCode, setMarkingCode] = useState<string | null>(null);
+  const [removingCode, setRemovingCode] = useState<string | null>(null);
   const [result, setResult] = useState<CheckinResult | null>(null);
 
   const refreshLists = async () => {
@@ -52,6 +53,24 @@ function PortaPage() {
       });
     } finally {
       setMarkingCode(null);
+    }
+  };
+
+  const removeEntry = async (code: string) => {
+    setRemovingCode(code);
+    setResult(null);
+    try {
+      const res = await unregisterDoorCheckin(code);
+      setResult(res);
+      await refreshLists();
+    } catch (e) {
+      setResult({
+        ok: false,
+        on_list: false,
+        message: e instanceof Error ? e.message : "Erro ao remover entrada.",
+      });
+    } finally {
+      setRemovingCode(null);
     }
   };
 
@@ -206,6 +225,10 @@ function PortaPage() {
                     : "Nenhum resultado na pesquisa."
               }
               showEntry
+              showRemoveButton
+              removingCode={removingCode}
+              markingCode={markingCode}
+              onRemoveEntry={removeEntry}
             />
           </section>
         </div>
@@ -223,15 +246,21 @@ function PortaGuestList({
   emptyMessage,
   showEntry,
   showMarkButton,
+  showRemoveButton,
   markingCode,
+  removingCode,
   onMarkEntry,
+  onRemoveEntry,
 }: {
   guests: { name: string; table?: string | null; code: string; checked_in_at?: string | null }[];
   emptyMessage: string;
   showEntry: boolean;
   showMarkButton?: boolean;
+  showRemoveButton?: boolean;
   markingCode?: string | null;
+  removingCode?: string | null;
   onMarkEntry?: (code: string) => void;
+  onRemoveEntry?: (code: string) => void;
 }) {
   return (
     <div className="glass overflow-hidden rounded-2xl">
@@ -239,6 +268,8 @@ function PortaGuestList({
         {guests.map((g) => {
           const entered = !!g.checked_in_at;
           const marking = markingCode === g.code;
+          const removing = removingCode === g.code;
+          const actionBusy = !!markingCode || !!removingCode;
           return (
             <li
               key={`${g.code}-${g.checked_in_at ?? "pending"}`}
@@ -255,16 +286,28 @@ function PortaGuestList({
                   <p className="mt-1 text-xs text-primary">Já entrou</p>
                 )}
               </div>
-              {showMarkButton && !entered && onMarkEntry && (
-                <button
-                  type="button"
-                  disabled={!!markingCode}
-                  onClick={() => onMarkEntry(g.code)}
-                  className="bg-gold-gradient shrink-0 rounded-full px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-                >
-                  {marking ? "…" : "Marcar entrada"}
-                </button>
-              )}
+              <div className="flex shrink-0 flex-col gap-1">
+                {showMarkButton && !entered && onMarkEntry && (
+                  <button
+                    type="button"
+                    disabled={actionBusy}
+                    onClick={() => onMarkEntry(g.code)}
+                    className="bg-gold-gradient rounded-full px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                  >
+                    {marking ? "…" : "Marcar entrada"}
+                  </button>
+                )}
+                {showRemoveButton && entered && onRemoveEntry && (
+                  <button
+                    type="button"
+                    disabled={actionBusy}
+                    onClick={() => onRemoveEntry(g.code)}
+                    className="rounded-full border border-destructive/50 px-3 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                  >
+                    {removing ? "…" : "Remover entrada"}
+                  </button>
+                )}
+              </div>
             </li>
           );
         })}

@@ -109,6 +109,16 @@ export async function registerDoorCheckin(code: string): Promise<CheckinResult> 
   return parseJson<CheckinResult>(res);
 }
 
+export async function unregisterDoorCheckin(code: string): Promise<CheckinResult> {
+  const normalized = normalizeGuestCode(code);
+  const res = await fetch(apiUrl(`/api/checkin/uncheck`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: normalized }),
+  });
+  return parseJson<CheckinResult>(res);
+}
+
 export async function fetchAttendanceStats(): Promise<AttendanceStats> {
   const res = await fetch(apiUrl(`/api/checkin/stats`));
   return parseJson<AttendanceStats>(res);
