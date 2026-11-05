@@ -231,9 +231,8 @@ export function DrinkCatalog({ code, guestName, showBackToInvite }: DrinkCatalog
             <h2 id="drink-order-title" className="text-lg font-semibold">
               {selected.name}
             </h2>
-            <p className="text-xs text-muted-foreground">Disponível: {selected.quantity}</p>
 
-            <p className="mb-2 mt-4 text-sm font-medium">Quantidade</p>
+            <p className="mb-2 mt-6 text-sm font-medium">Quantidade</p>
             <div className="flex items-center justify-center gap-4">
               <button
                 type="button"
