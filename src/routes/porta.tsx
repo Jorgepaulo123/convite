@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, UserX } from "lucide-react";
-import { useState } from "react";
-import { registerDoorCheckin, type CheckinResult } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { fetchCheckinRoster, registerDoorCheckin, type CheckinResult } from "@/lib/api";
 import { GUEST_CODE_MAX_LEN, isValidGuestCode, normalizeGuestCode } from "@/lib/guest-code";
 
 export const Route = createFileRoute("/porta")({
@@ -14,10 +15,46 @@ export const Route = createFileRoute("/porta")({
   component: PortaPage,
 });
 
+function formatEntry(iso: string) {
+  return new Date(iso).toLocaleString("pt-PT", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function PortaPage() {
+  const qc = useQueryClient();
   const [phone, setPhone] = useState("");
+  const [listSearch, setListSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<CheckinResult | null>(null);
+
+  const rosterQuery = useQuery({
+    queryKey: ["checkin-roster"],
+    queryFn: fetchCheckinRoster,
+    refetchInterval: 5000,
+  });
+
+  const q = listSearch.trim().toLowerCase();
+  const allGuests = rosterQuery.data?.guests ?? [];
+  const filteredAll = useMemo(() => {
+    if (!q) return allGuests;
+    return allGuests.filter((g) =>
+      [g.name, g.code, g.table ?? ""].join(" ").toLowerCase().includes(q),
+    );
+  }, [allGuests, q]);
+
+  const filteredEntered = useMemo(() => {
+    const entered = allGuests.filter((g) => g.checked_in_at);
+    const list = q
+      ? entered.filter((g) => [g.name, g.code, g.table ?? ""].join(" ").toLowerCase().includes(q))
+      : entered;
+    return [...list].sort(
+      (a, b) => new Date(b.checked_in_at!).getTime() - new Date(a.checked_in_at!).getTime(),
+    );
+  }, [allGuests, q]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +73,8 @@ function PortaPage() {
       const res = await registerDoorCheckin(normalized);
       setResult(res);
       if (res.ok) setPhone("");
+      await qc.invalidateQueries({ queryKey: ["checkin-roster"] });
+      await qc.invalidateQueries({ queryKey: ["attendance-stats"] });
     } catch (e) {
       setResult({
         ok: false,
@@ -48,13 +87,13 @@ function PortaPage() {
   };
 
   return (
-    <main className="grid min-h-screen place-items-center bg-background p-6">
-      <div className="w-full max-w-md">
+    <main className="min-h-screen bg-background px-4 py-8 md:px-8">
+      <div className="mx-auto w-full max-w-5xl">
         <p className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.35em] text-primary">Entrada</p>
         <h1 className="font-script text-gold-gradient mb-2 text-center text-5xl">Verificação</h1>
-        <p className="mb-8 text-center text-sm text-muted-foreground">Introduza o contacto do WhatsApp do convidado.</p>
+        <p className="mb-6 text-center text-sm text-muted-foreground">Introduza o contacto do WhatsApp do convidado.</p>
 
-        <form onSubmit={submit} className="glass space-y-4 rounded-3xl p-6">
+        <form onSubmit={submit} className="glass mx-auto mb-6 max-w-md space-y-4 rounded-3xl p-6">
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -75,7 +114,7 @@ function PortaPage() {
 
         {result && (
           <div
-            className={`mt-6 rounded-3xl p-6 text-center ${
+            className={`mx-auto mb-8 max-w-md rounded-3xl p-6 text-center ${
               result.on_list ? "glass ring-2 ring-primary/40" : "bg-destructive/10 ring-2 ring-destructive/30"
             }`}
           >
@@ -87,9 +126,7 @@ function PortaPage() {
             <p className={`text-lg font-semibold ${result.on_list ? "text-primary" : "text-destructive"}`}>
               {result.message}
             </p>
-            {result.name && (
-              <p className="mt-2 text-xl font-medium">{result.name}</p>
-            )}
+            {result.name && <p className="mt-2 text-xl font-medium">{result.name}</p>}
             {result.table && <p className="mt-1 text-sm text-muted-foreground">{result.table}</p>}
             {result.already_checked_in && result.on_list && (
               <p className="mt-2 text-xs text-muted-foreground">(Entrada já registada antes)</p>
@@ -97,10 +134,88 @@ function PortaPage() {
           </div>
         )}
 
+        <div className="glass mb-4 rounded-2xl p-4">
+          <input
+            value={listSearch}
+            onChange={(e) => setListSearch(e.target.value)}
+            placeholder="Pesquisar nas listas (nome, telemóvel, mesa)…"
+            className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+          />
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Entraram:{" "}
+            <span className="font-semibold text-primary">{rosterQuery.data?.checked_in ?? "—"}</span> /{" "}
+            {rosterQuery.data?.total_guests ?? "—"} convidados
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <section>
+            <h2 className="mb-3 text-sm font-semibold">
+              Lista de convidados <span className="text-muted-foreground">({filteredAll.length})</span>
+            </h2>
+            <PortaGuestList
+              guests={filteredAll}
+              emptyMessage={
+                rosterQuery.isLoading
+                  ? "A carregar…"
+                  : allGuests.length && !filteredAll.length
+                    ? "Nenhum resultado na pesquisa."
+                    : "Sem convidados na lista."
+              }
+              showEntry={false}
+            />
+          </section>
+          <section>
+            <h2 className="mb-3 text-sm font-semibold">
+              Convidados que entraram{" "}
+              <span className="text-muted-foreground">({filteredEntered.length})</span>
+            </h2>
+            <PortaGuestList
+              guests={filteredEntered}
+              emptyMessage={
+                rosterQuery.isLoading
+                  ? "A carregar…"
+                  : filteredEntered.length === 0
+                    ? "Ainda ninguém entrou."
+                    : "Nenhum resultado na pesquisa."
+              }
+              showEntry
+            />
+          </section>
+        </div>
+
         <p className="mt-8 text-center text-xs text-muted-foreground">
           Tela de totais: <span className="text-primary">/tela-presenca</span>
         </p>
       </div>
     </main>
+  );
+}
+
+function PortaGuestList({
+  guests,
+  emptyMessage,
+  showEntry,
+}: {
+  guests: { name: string; table?: string | null; code: string; checked_in_at?: string | null }[];
+  emptyMessage: string;
+  showEntry: boolean;
+}) {
+  return (
+    <div className="glass overflow-hidden rounded-2xl">
+      <ul className="max-h-[50vh] divide-y divide-border overflow-y-auto text-sm lg:max-h-[55vh]">
+        {guests.map((g) => (
+          <li key={`${g.code}-${g.checked_in_at ?? "pending"}`} className="px-4 py-3">
+            <p className="font-medium">{g.name}</p>
+            <p className="font-mono text-xs text-primary">{g.code}</p>
+            {g.table && <p className="text-xs text-muted-foreground">{g.table}</p>}
+            {showEntry && g.checked_in_at && (
+              <p className="mt-1 text-xs text-gold-soft">Entrada: {formatEntry(g.checked_in_at)}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+      {!guests.length && <p className="px-4 py-6 text-center text-muted-foreground">{emptyMessage}</p>}
+    </div>
   );
 }

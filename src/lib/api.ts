@@ -28,6 +28,19 @@ export type AttendanceStats = {
   recent: { name: string; table?: string | null; checked_in_at: string }[];
 };
 
+export type CheckinRosterGuest = {
+  name: string;
+  table?: string | null;
+  code: string;
+  checked_in_at?: string | null;
+};
+
+export type CheckinRoster = {
+  total_guests: number;
+  checked_in: number;
+  guests: CheckinRosterGuest[];
+};
+
 export type GalleryItem = { id: number; url: string; sort_order: number };
 
 export type ProgramItem = { id: number; title: string; time: string; sort_order: number };
@@ -99,6 +112,11 @@ export async function registerDoorCheckin(code: string): Promise<CheckinResult> 
 export async function fetchAttendanceStats(): Promise<AttendanceStats> {
   const res = await fetch(apiUrl(`/api/checkin/stats`));
   return parseJson<AttendanceStats>(res);
+}
+
+export async function fetchCheckinRoster(): Promise<CheckinRoster> {
+  const res = await fetch(apiUrl(`/api/checkin/roster`));
+  return parseJson<CheckinRoster>(res);
 }
 
 export async function verifyGuestCode(code: string): Promise<Guest> {
