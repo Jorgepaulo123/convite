@@ -68,7 +68,7 @@ function PresentRow({
 }
 
 function PresencasTelaPage() {
-  const { present, presentGuests, celebration, wsLive } = useTelaPresencaRealtime();
+  const { presentGuests, celebration, wsLive } = useTelaPresencaRealtime();
 
   const highlightKey = useMemo(() => {
     if (!celebration) return null;
@@ -97,24 +97,7 @@ function PresencasTelaPage() {
           )}
         </header>
 
-        <div className="grid flex-1 gap-8 lg:grid-cols-[minmax(240px,320px)_1fr] lg:gap-10">
-          <aside className="flex flex-col justify-center lg:sticky lg:top-10 lg:self-start">
-            <div
-              className={`rounded-[2rem] border border-primary/35 bg-gradient-to-b from-primary/15 to-transparent px-8 py-10 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-all duration-500 ${
-                celebration ? "scale-[0.98] ring-2 ring-primary/50" : ""
-              }`}
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.4em] text-gold-soft">Presentes agora</p>
-              <p
-                key={present}
-                className="font-script mt-4 tabular-nums text-primary text-[clamp(4rem,12vw,7rem)] leading-none animate-in zoom-in-50 duration-500"
-              >
-                {present}
-              </p>
-            </div>
-          </aside>
-
-          <section className="flex min-h-0 flex-col">
+        <section className="flex min-h-0 flex-1 flex-col">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-gold-soft">
               Convidados
             </h2>
@@ -140,7 +123,7 @@ function PresencasTelaPage() {
                   </p>
                 </div>
               ) : (
-                <ul className="presentes-scroll max-h-[min(62vh,720px)] space-y-3 overflow-y-auto pr-1 pt-1">
+                <ul className="presentes-scroll max-h-[min(72vh,820px)] space-y-3 overflow-y-auto pr-1 pt-1">
                   {presentGuests.map((guest, index) => (
                     <PresentRow
                       key={guestKey(guest)}
@@ -152,8 +135,7 @@ function PresencasTelaPage() {
                 </ul>
               )}
             </div>
-          </section>
-        </div>
+        </section>
       </div>
 
       {celebration && (
