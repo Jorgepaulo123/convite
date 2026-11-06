@@ -65,6 +65,7 @@ export type DrinkOrderStatus = "pending" | "delivered" | "cancelled";
 export type DrinkOrder = {
   id: number;
   guest_name: string;
+  guest_table?: string | null;
   drink_name: string;
   quantity: number;
   status: DrinkOrderStatus;

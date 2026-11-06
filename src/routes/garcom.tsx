@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Clock, PackageCheck, XCircle } from "lucide-react";
+import { Armchair, Check, Clock, PackageCheck, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   fetchStaffDrinkOrders,
@@ -114,7 +114,14 @@ function GarcomPage() {
               <div>
                 <p className="text-lg font-semibold">{o.drink_name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {o.guest_name} · <span className="tabular-nums font-medium text-foreground">×{o.quantity}</span>
+                  {o.guest_name}
+                  {o.guest_table && (
+                    <span className="ml-1 inline-flex items-center gap-1 font-medium text-foreground">
+                      <Armchair className="inline" size={14} />
+                      {o.guest_table}
+                    </span>
+                  )}{" "}
+                  · <span className="tabular-nums font-medium text-foreground">×{o.quantity}</span>
                 </p>
                 <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                   <Clock size={12} /> {formatTime(o.created_at)}

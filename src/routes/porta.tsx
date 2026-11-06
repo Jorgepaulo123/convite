@@ -169,7 +169,11 @@ function PortaPage() {
               {result.message}
             </p>
             {result.name && <p className="mt-2 text-xl font-medium">{result.name}</p>}
-            {result.table && <p className="mt-1 text-sm text-muted-foreground">{result.table}</p>}
+            {result.table && (
+              <p className="mt-3 inline-flex items-center justify-center gap-2 rounded-full border border-primary/35 bg-primary/10 px-4 py-2 text-base font-semibold text-primary">
+                Mesa {result.table}
+              </p>
+            )}
             {result.already_checked_in && result.on_list && (
               <p className="mt-2 text-xs text-muted-foreground">(Entrada já registada antes)</p>
             )}
