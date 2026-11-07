@@ -53,7 +53,17 @@ function PresentRow({
           highlighted ? "text-secondary-foreground" : "text-secondary-foreground/95"
         }`}
       >
-        {guest.name}
+        <span>{guest.name}</span>
+        {guest.table && (
+          <span
+            className={`ml-2 inline-flex items-center gap-1 text-base font-medium sm:text-lg ${
+              highlighted ? "text-primary" : "text-gold-soft"
+            }`}
+          >
+            <Armchair size={16} className="shrink-0 opacity-90" aria-hidden />
+            Mesa {guest.table}
+          </span>
+        )}
       </p>
       <time
         dateTime={guest.checked_in_at}
@@ -172,7 +182,7 @@ function PresencasTelaPage() {
           )}
         </header>
 
-        <section className="flex min-h-0 flex-1 flex-col">
+        <section className="mx-auto flex w-full min-h-0 max-w-3xl flex-1 flex-col">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-gold-soft">
               Convidados
             </h2>

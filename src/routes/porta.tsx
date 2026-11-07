@@ -280,9 +280,13 @@ function PortaGuestList({
               className="flex items-start justify-between gap-3 px-4 py-3"
             >
               <div className="min-w-0 flex-1">
-                <p className="font-medium">{g.name}</p>
+                <p className="font-medium leading-snug">
+                  {g.name}
+                  {g.table && (
+                    <span className="ml-1.5 font-semibold text-primary">· Mesa {g.table}</span>
+                  )}
+                </p>
                 <p className="font-mono text-xs text-primary">{g.code}</p>
-                {g.table && <p className="text-xs text-muted-foreground">{g.table}</p>}
                 {showEntry && g.checked_in_at && (
                   <p className="mt-1 text-xs text-gold-soft">Entrada: {formatEntry(g.checked_in_at)}</p>
                 )}
