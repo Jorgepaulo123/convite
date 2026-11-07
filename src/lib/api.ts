@@ -10,6 +10,7 @@ export type Guest = {
 export type GuestAdmin = Guest & {
   id: number;
   contact: string;
+  party_size: number;
   created_at: string;
   checked_in_at?: string | null;
 };
@@ -19,6 +20,7 @@ export type CheckinResult = {
   on_list: boolean;
   name?: string | null;
   table?: string | null;
+  party_size?: number | null;
   already_checked_in?: boolean;
   message: string;
 };
@@ -212,18 +214,23 @@ export async function adminListGuests(): Promise<GuestAdmin[]> {
   return parseJson<GuestAdmin[]>(res);
 }
 
-export async function adminCreateGuest(name: string, contact: string, table?: string) {
+export async function adminCreateGuest(
+  name: string,
+  contact: string,
+  table?: string,
+  partySize = 1,
+) {
   const res = await fetch(apiUrl(`/api/admin/guests`), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...adminHeaders() },
-    body: JSON.stringify({ name, contact, table: table || null }),
+    body: JSON.stringify({ name, contact, table: table || null, party_size: partySize }),
   });
   return parseJson<GuestAdmin>(res);
 }
 
 export async function adminUpdateGuest(
   id: number,
-  patch: { name?: string; contact?: string; table?: string | null },
+  patch: { name?: string; contact?: string; table?: string | null; party_size?: number },
 ) {
   const res = await fetch(apiUrl(`/api/admin/guests/${id}`), {
     method: "PATCH",

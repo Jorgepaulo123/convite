@@ -57,6 +57,8 @@ import {
 } from "@/lib/guest-list-utils";
 import { DRINK_CATEGORIES, DRINK_CATEGORY_LABEL, type DrinkCategory } from "@/lib/drink-categories";
 
+const PARTY_SIZE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
+
 const MODES: { id: ScreenMode; label: string; icon: typeof Video }[] = [
   { id: "live", label: "Ao vivo", icon: Video },
   { id: "photos", label: "Fotos", icon: Image },
@@ -246,6 +248,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [table, setTable] = useState("");
+  const [partySize, setPartySize] = useState(1);
   const [progTitle, setProgTitle] = useState("");
   const [progTime, setProgTime] = useState("");
   const [screenPanel, setScreenPanel] = useState<ScreenMode | null>(null);
@@ -255,6 +258,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
   const [editName, setEditName] = useState("");
   const [editContact, setEditContact] = useState("");
   const [editTable, setEditTable] = useState("");
+  const [editPartySize, setEditPartySize] = useState(1);
   const [savingGuest, setSavingGuest] = useState(false);
   const [guestListSearch, setGuestListSearch] = useState("");
   const [guestListRsvpFilter, setGuestListRsvpFilter] = useState<GuestRsvpFilter>("all");
@@ -436,6 +440,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     setEditName(g.name);
     setEditContact(g.contact);
     setEditTable(g.table ?? "");
+    setEditPartySize(g.party_size ?? 1);
     setErr("");
     setMsg("");
   };
@@ -445,6 +450,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     setEditName("");
     setEditContact("");
     setEditTable("");
+    setEditPartySize(1);
   };
 
   const saveEditGuest = async (e: React.FormEvent) => {
@@ -458,6 +464,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
         name: editName.trim(),
         contact: editContact.trim(),
         table: editTable.trim() || null,
+        party_size: editPartySize,
       });
       setMsg("Convidado actualizado.");
       cancelEditGuest();
@@ -478,10 +485,12 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
         name.trim(),
         contact.trim(),
         table.trim() || undefined,
+        partySize,
       );
       setName("");
       setContact("");
       setTable("");
+      setPartySize(1);
       const accessHint = contact.trim()
         ? `Acesso com o telemóvel ${g.code}.`
         : `Código de acesso gerado: ${g.code}.`;
@@ -750,6 +759,20 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                         placeholder="Mesa (opcional)"
                         className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
                       />
+                      <label className="block">
+                        <span className="mb-1 block text-xs text-muted-foreground">Total de pessoas (incl. convidado)</span>
+                        <select
+                          value={editPartySize}
+                          onChange={(e) => setEditPartySize(Number(e.target.value))}
+                          className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+                        >
+                          {PARTY_SIZE_OPTIONS.map((n) => (
+                            <option key={n} value={n}>
+                              {n} {n === 1 ? "pessoa" : "pessoas"}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                       <div className="flex gap-2">
                         <button
                           type="submit"
@@ -777,6 +800,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                         <p className="mt-1 text-xs text-muted-foreground">
                           Contacto: {g.contact}
                           {g.table ? ` · ${g.table}` : ""}
+                          {(g.party_size ?? 1) > 1 ? ` · ${g.party_size} pessoas` : ""}
                         </p>
                         <div className="mt-2">
                           <RsvpBadge status={g.rsvp_status ?? "pending"} />
@@ -820,6 +844,20 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                 className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
               />
               <input value={table} onChange={(e) => setTable(e.target.value)} placeholder="Mesa (opcional)" className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm" />
+              <label className="block">
+                <span className="mb-1 block text-xs text-muted-foreground">Total de pessoas (incl. convidado)</span>
+                <select
+                  value={partySize}
+                  onChange={(e) => setPartySize(Number(e.target.value))}
+                  className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
+                >
+                  {PARTY_SIZE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {n} {n === 1 ? "pessoa" : "pessoas"}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button type="submit" className="bg-gold-gradient w-full rounded-full py-2.5 text-sm font-semibold text-primary-foreground">
                 Adicionar convidado
               </button>

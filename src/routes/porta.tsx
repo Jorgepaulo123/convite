@@ -168,11 +168,23 @@ function PortaPage() {
             <p className={`text-lg font-semibold ${result.on_list ? "text-primary" : "text-destructive"}`}>
               {result.message}
             </p>
-            {result.name && <p className="mt-2 text-xl font-medium">{result.name}</p>}
-            {result.table && (
-              <p className="mt-3 inline-flex items-center justify-center gap-2 rounded-full border border-primary/35 bg-primary/10 px-4 py-2 text-base font-semibold text-primary">
-                Mesa {result.table}
-              </p>
+            {result.on_list && result.name && (
+              <div className="mt-4 space-y-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-left text-sm">
+                <div className="flex justify-between gap-3 border-b border-white/10 pb-2">
+                  <span className="text-muted-foreground">Nome</span>
+                  <span className="text-right font-semibold text-foreground">{result.name}</span>
+                </div>
+                <div className="flex justify-between gap-3 border-b border-white/10 pb-2">
+                  <span className="text-muted-foreground">Mesa</span>
+                  <span className="text-right font-semibold text-primary">{result.table ?? "—"}</span>
+                </div>
+                <div className="flex justify-between gap-3 pt-1">
+                  <span className="text-muted-foreground">Total de pessoas</span>
+                  <span className="text-right text-lg font-bold tabular-nums text-primary">
+                    {result.party_size ?? 1}
+                  </span>
+                </div>
+              </div>
             )}
             {result.already_checked_in && result.on_list && (
               <p className="mt-2 text-xs text-muted-foreground">(Entrada já registada antes)</p>
