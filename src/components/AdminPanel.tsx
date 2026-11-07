@@ -474,13 +474,18 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
     setErr("");
     setMsg("");
     try {
-      const g = await adminCreateGuest(name.trim(), contact.trim(), table.trim() || undefined);
+      const g = await adminCreateGuest(
+        name.trim(),
+        contact.trim(),
+        table.trim() || undefined,
+      );
       setName("");
       setContact("");
       setTable("");
-      setMsg(
-        `Convidado criado. Acesso: telemóvel ${g.code}.${g.table ? ` Mesa: ${g.table}.` : ""}`,
-      );
+      const accessHint = contact.trim()
+        ? `Acesso com o telemóvel ${g.code}.`
+        : `Código de acesso gerado: ${g.code}.`;
+      setMsg(`Convidado criado. ${accessHint}${g.table ? ` Mesa: ${g.table}.` : ""}`);
       qc.invalidateQueries({ queryKey: ["admin-guests"] });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro");
@@ -742,7 +747,7 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
                       <input
                         value={editTable}
                         onChange={(e) => setEditTable(e.target.value)}
-                        placeholder="Mesa (opcional — vazio gera 6 dígitos)"
+                        placeholder="Mesa (opcional)"
                         className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
                       />
                       <div className="flex gap-2">
@@ -808,14 +813,13 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
               <p className="text-sm font-medium">Novo convidado</p>
               <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome" className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm" />
               <input
-                required
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
-                placeholder="Telemóvel (ex: 841041035) — será o acesso"
+                placeholder="Telemóvel (opcional — vazio gera código de 6 dígitos)"
                 inputMode="tel"
                 className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm"
               />
-              <input value={table} onChange={(e) => setTable(e.target.value)} placeholder="Mesa (opcional — vazio gera 6 dígitos)" className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm" />
+              <input value={table} onChange={(e) => setTable(e.target.value)} placeholder="Mesa (opcional)" className="w-full rounded-full border border-input bg-transparent px-4 py-2 text-sm" />
               <button type="submit" className="bg-gold-gradient w-full rounded-full py-2.5 text-sm font-semibold text-primary-foreground">
                 Adicionar convidado
               </button>

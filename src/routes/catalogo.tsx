@@ -36,7 +36,7 @@ function CatalogoPage() {
     e.preventDefault();
     const normalized = normalizeGuestCode(phone);
     if (!isValidGuestCode(normalized)) {
-      setError("Introduza o número do convite (telemóvel completo).");
+      setError("Introduza o código de acesso (telemóvel ou 6 dígitos).");
       return;
     }
     setLoading(true);

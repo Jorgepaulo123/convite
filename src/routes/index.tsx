@@ -55,7 +55,7 @@ function Portal() {
     e.preventDefault();
     const trimmed = normalizeGuestCode(code);
     if (!isValidGuestCode(trimmed)) {
-      setError("Introduza o seu número de telemóvel completo.");
+      setError("Introduza o código de acesso (telemóvel ou 6 dígitos).");
       return;
     }
     setLoading(true);

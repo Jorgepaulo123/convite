@@ -1,5 +1,5 @@
-/** Código de convite = número de telemóvel (só dígitos). */
-export const GUEST_CODE_MIN_LEN = 8;
+/** Código de convite: telemóvel (8–15 dígitos) ou código gerado (6 dígitos). */
+export const GUEST_CODE_MIN_LEN = 6;
 export const GUEST_CODE_MAX_LEN = 15;
 
 export function normalizeGuestCode(raw: string): string {
