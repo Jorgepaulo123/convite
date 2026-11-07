@@ -28,6 +28,9 @@ function formatEntryTime(iso: string | undefined) {
   return d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
 }
 
+const LIST_GRID =
+  "grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,7rem)_5.5rem] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(5rem,8rem)_6.5rem] sm:gap-4";
+
 function PresentRow({
   guest,
   index,
@@ -42,32 +45,29 @@ function PresentRow({
   return (
     <li
       style={{ animationDelay: `${Math.min(index, 12) * 40}ms` }}
-      className={`animate-in fade-in slide-in-from-left-4 relative flex items-center justify-between gap-6 rounded-2xl border px-5 py-4 duration-500 sm:px-6 ${
+      className={`animate-in fade-in slide-in-from-left-4 relative ${LIST_GRID} rounded-2xl border px-5 py-4 duration-500 sm:px-6 ${
         highlighted
           ? "presenca-row-glow border-primary bg-gold-gradient/25 ring-2 ring-primary/60"
           : "border-white/10 bg-white/[0.04] backdrop-blur-md"
       }`}
     >
       <p
-        className={`min-w-0 flex-1 text-left text-lg font-semibold leading-snug sm:text-xl ${
+        className={`min-w-0 text-left text-lg font-semibold leading-snug sm:text-xl ${
           highlighted ? "text-secondary-foreground" : "text-secondary-foreground/95"
         }`}
       >
-        <span>{guest.name}</span>
-        {guest.table && (
-          <span
-            className={`ml-2 inline-flex items-center gap-1 text-base font-medium sm:text-lg ${
-              highlighted ? "text-primary" : "text-gold-soft"
-            }`}
-          >
-            <Armchair size={16} className="shrink-0 opacity-90" aria-hidden />
-            Mesa {guest.table}
-          </span>
-        )}
+        {guest.name}
+      </p>
+      <p
+        className={`text-center text-base font-semibold tabular-nums sm:text-lg ${
+          highlighted ? "text-primary" : "text-gold-soft"
+        }`}
+      >
+        {guest.table ?? "—"}
       </p>
       <time
         dateTime={guest.checked_in_at}
-        className={`shrink-0 font-mono text-xl font-semibold tabular-nums sm:text-2xl ${
+        className={`text-right font-mono text-xl font-semibold tabular-nums sm:text-2xl ${
           highlighted ? "text-primary" : "text-gold-soft"
         }`}
       >
@@ -189,11 +189,12 @@ function PresencasTelaPage() {
 
             {presentGuests.length > 0 && (
               <div
-                className="mb-2 flex items-center justify-between gap-4 px-5 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:px-6"
+                className={`mb-2 ${LIST_GRID} px-5 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:px-6`}
                 aria-hidden
               >
-                <span>Nome</span>
-                <span>Hora</span>
+                <span className="text-left">Nome</span>
+                <span className="text-center">Mesa</span>
+                <span className="text-right">Hora</span>
               </div>
             )}
 
