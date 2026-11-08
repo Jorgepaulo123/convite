@@ -17,12 +17,11 @@ export type GiftRecipientId = "kayan" | "orquidea";
 
 export const GIFT_RECIPIENTS: Record<
   GiftRecipientId,
-  { displayName: string; mpesa: string; emola: string; bank: string }
+  { displayName: string; mpesa: string; emola?: string; bank: string }
 > = {
   kayan: {
     displayName: "Kayan",
     mpesa: "84 933 4480",
-    emola: "87 933 4480",
     bank: "0008 0000 8983 3932 1018 0 — BCI",
   },
   orquidea: {

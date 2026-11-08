@@ -31,9 +31,11 @@ function PaymentDetails({ recipientId }: { recipientId: GiftRecipientId }) {
       <p>
         <span className="font-semibold text-primary">M-Pesa:</span> {r.mpesa}
       </p>
-      <p>
-        <span className="font-semibold text-primary">e-Mola:</span> {r.emola}
-      </p>
+      {r.emola ? (
+        <p>
+          <span className="font-semibold text-primary">e-Mola:</span> {r.emola}
+        </p>
+      ) : null}
       <p>
         <span className="font-semibold text-primary">Banco (NIB):</span> {r.bank}
       </p>
