@@ -47,28 +47,28 @@ function PresentRow({
       style={{ animationDelay: `${Math.min(index, 12) * 40}ms` }}
       className={`animate-in fade-in slide-in-from-left-4 relative ${LIST_GRID} rounded-2xl border px-5 py-4 duration-500 sm:px-6 ${
         highlighted
-          ? "presenca-row-glow border-primary bg-gold-gradient/25 ring-2 ring-primary/60"
-          : "border-white/10 bg-white/[0.04] backdrop-blur-md"
+          ? "presenca-row-glow border-primary/50 bg-amber-50 ring-2 ring-primary/40"
+          : "border-neutral-200 bg-white shadow-sm"
       }`}
     >
       <p
-        className={`min-w-0 text-left text-lg font-semibold leading-snug sm:text-xl ${
-          highlighted ? "text-secondary-foreground" : "text-secondary-foreground/95"
+        className={`min-w-0 text-left text-lg font-semibold leading-snug text-neutral-900 sm:text-xl ${
+          highlighted ? "text-neutral-950" : ""
         }`}
       >
         {guest.name}
       </p>
       <p
-        className={`text-center text-base font-semibold tabular-nums sm:text-lg ${
-          highlighted ? "text-primary" : "text-gold-soft"
+        className={`text-center text-base font-semibold tabular-nums text-amber-800 sm:text-lg ${
+          highlighted ? "text-primary" : ""
         }`}
       >
         {guest.table ?? "—"}
       </p>
       <time
         dateTime={guest.checked_in_at}
-        className={`text-right font-mono text-xl font-semibold tabular-nums sm:text-2xl ${
-          highlighted ? "text-primary" : "text-gold-soft"
+        className={`text-right font-mono text-xl font-semibold tabular-nums text-amber-800 sm:text-2xl ${
+          highlighted ? "text-primary" : ""
         }`}
       >
         {time}
@@ -162,34 +162,34 @@ function PresencasTelaPage() {
   }, [celebration, presentGuests, overlayPhase]);
 
   return (
-    <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#070708] text-secondary-foreground">
+    <main className="presencas-tela relative flex min-h-screen flex-col overflow-hidden bg-white text-neutral-900">
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--primary) / 0.25), transparent), radial-gradient(ellipse 60% 40% at 100% 100%, hsl(var(--primary) / 0.12), transparent)",
+            "radial-gradient(ellipse 90% 60% at 50% -10%, hsl(var(--primary) / 0.08), transparent), radial-gradient(ellipse 50% 40% at 100% 100%, hsl(var(--primary) / 0.05), transparent)",
         }}
       />
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-8 md:px-10 md:py-10">
-        <header className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-white/10 pb-6">
+        <header className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-neutral-200 pb-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.45em] text-gold-soft">Graduação</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.45em] text-amber-800/80">Graduação</p>
             <h1 className="font-script text-gold-gradient mt-1 text-4xl md:text-5xl">Msc. Kayan & Dra. Orquídea</h1>
           </div>
           {!wsLive && (
-            <p className="text-xs text-muted-foreground">Actualização automática…</p>
+            <p className="text-xs text-neutral-500">Actualização automática…</p>
           )}
         </header>
 
         <section className="mx-auto flex w-full min-h-0 max-w-3xl flex-1 flex-col">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-gold-soft">
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-neutral-600">
               Convidados
             </h2>
 
             {presentGuests.length > 0 && (
               <div
-                className={`mb-2 ${LIST_GRID} px-5 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:px-6`}
+                className={`mb-2 ${LIST_GRID} px-5 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 sm:px-6`}
                 aria-hidden
               >
                 <span className="text-left">Nome</span>
@@ -198,13 +198,13 @@ function PresencasTelaPage() {
               </div>
             )}
 
-            <div className="presentes-scroll relative min-h-[280px] flex-1 overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 p-4 md:p-5">
-              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-[#070708] to-transparent" />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 bg-gradient-to-t from-[#070708] to-transparent" />
+            <div className="presentes-scroll relative min-h-[280px] flex-1 overflow-hidden rounded-[2rem] border border-neutral-200 bg-neutral-50 p-4 shadow-inner md:p-5">
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-neutral-50 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 bg-gradient-to-t from-neutral-50 to-transparent" />
 
               {presentGuests.length === 0 ? (
                 <div className="grid h-full min-h-[240px] place-items-center px-6 text-center">
-                  <p className="max-w-sm text-muted-foreground">
+                  <p className="max-w-sm text-neutral-500">
                     A lista aparece aqui assim que os convidados forem verificados na porta.
                   </p>
                 </div>
@@ -263,8 +263,11 @@ function PresencasTelaPage() {
           50% { transform: translateY(-12px) scale(1.08); opacity: 1; }
         }
         @keyframes presenca-row-glow-pulse {
-          0%, 100% { box-shadow: 0 0 32px -6px hsl(var(--primary) / 0.55); }
-          50% { box-shadow: 0 0 48px -4px hsl(var(--primary) / 0.85); }
+          0%, 100% { box-shadow: 0 0 24px -4px hsl(var(--primary) / 0.35); }
+          50% { box-shadow: 0 0 36px -2px hsl(var(--primary) / 0.5); }
+        }
+        .presencas-tela {
+          color-scheme: light;
         }
         .presenca-backdrop-in { animation: presenca-backdrop-in 0.45s ease-out forwards; }
         .presenca-backdrop-out { animation: presenca-backdrop-out 0.65s ease-in forwards; }
