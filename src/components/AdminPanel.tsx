@@ -1203,6 +1203,10 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
             <p className="mb-2 text-sm text-muted-foreground">
               <span className="text-primary">/tela</span> — felicitações e selfies (tela gigante). Brindes em tempo real.
             </p>
+            <p className="mb-2 text-sm text-muted-foreground">
+              <span className="text-primary">/felicitacoes-tela</span> — só mensagens de felicitação, grandes e animadas
+              (projector dedicado).
+            </p>
             <p className="mb-4 text-sm text-muted-foreground">
               Entrada na porta: <span className="text-primary">/porta</span> · Contador de presentes:{" "}
               <span className="text-primary">/presencas</span> · Garçom:{" "}

@@ -20,5 +20,6 @@ describe("App routing", () => {
 
     expect(router.matchRoutes("/tela").at(-1)?.routeId).toBe("/tela");
     expect(router.matchRoutes("/presencas").at(-1)?.routeId).toBe("/presencas");
+    expect(router.matchRoutes("/felicitacoes-tela").at(-1)?.routeId).toBe("/felicitacoes-tela");
   });
 });

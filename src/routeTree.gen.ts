@@ -16,6 +16,7 @@ import { Route as KAdminRouteImport } from './routes/k-admin'
 import { Route as PortaRouteImport } from './routes/porta'
 import { Route as PresencasRouteImport } from './routes/presencas'
 import { Route as TelaRouteImport } from './routes/tela'
+import { Route as FelicitacoesTelaRouteImport } from './routes/felicitacoes-tela'
 import { Route as ConviteFelicitacoesRouteImport } from './routes/convite_.felicitacoes'
 import { Route as ConviteFotoRouteImport } from './routes/convite_.foto'
 import { Route as ConvitePresencaRouteImport } from './routes/convite_.presenca'
@@ -57,6 +58,11 @@ const PresencasRoute = PresencasRouteImport.update({
 const TelaRoute = TelaRouteImport.update({
   id: '/tela',
   path: '/tela',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FelicitacoesTelaRoute = FelicitacoesTelaRouteImport.update({
+  id: '/felicitacoes-tela',
+  path: '/felicitacoes-tela',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConviteFelicitacoesRoute = ConviteFelicitacoesRouteImport.update({
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/porta': typeof PortaRoute
   '/presencas': typeof PresencasRoute
   '/tela': typeof TelaRoute
+  '/felicitacoes-tela': typeof FelicitacoesTelaRoute
   '/convite/felicitacoes': typeof ConviteFelicitacoesRoute
   '/convite/foto': typeof ConviteFotoRoute
   '/convite/presenca': typeof ConvitePresencaRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/porta': typeof PortaRoute
   '/presencas': typeof PresencasRoute
   '/tela': typeof TelaRoute
+  '/felicitacoes-tela': typeof FelicitacoesTelaRoute
   '/convite/felicitacoes': typeof ConviteFelicitacoesRoute
   '/convite/foto': typeof ConviteFotoRoute
   '/convite/presenca': typeof ConvitePresencaRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/porta': typeof PortaRoute
   '/presencas': typeof PresencasRoute
   '/tela': typeof TelaRoute
+  '/felicitacoes-tela': typeof FelicitacoesTelaRoute
   '/convite_/felicitacoes': typeof ConviteFelicitacoesRoute
   '/convite_/foto': typeof ConviteFotoRoute
   '/convite_/presenca': typeof ConvitePresencaRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/porta'
     | '/presencas'
     | '/tela'
+    | '/felicitacoes-tela'
     | '/convite/felicitacoes'
     | '/convite/foto'
     | '/convite/presenca'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/porta'
     | '/presencas'
     | '/tela'
+    | '/felicitacoes-tela'
     | '/convite/felicitacoes'
     | '/convite/foto'
     | '/convite/presenca'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/porta'
     | '/presencas'
     | '/tela'
+    | '/felicitacoes-tela'
     | '/convite_/felicitacoes'
     | '/convite_/foto'
     | '/convite_/presenca'
@@ -203,6 +215,7 @@ export interface RootRouteChildren {
   PortaRoute: typeof PortaRoute
   PresencasRoute: typeof PresencasRoute
   TelaRoute: typeof TelaRoute
+  FelicitacoesTelaRoute: typeof FelicitacoesTelaRoute
   ConviteFelicitacoesRoute: typeof ConviteFelicitacoesRoute
   ConviteFotoRoute: typeof ConviteFotoRoute
   ConvitePresencaRoute: typeof ConvitePresencaRoute
@@ -261,6 +274,13 @@ declare module '@tanstack/react-router' {
       path: '/tela'
       fullPath: '/tela'
       preLoaderRoute: typeof TelaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/felicitacoes-tela': {
+      id: '/felicitacoes-tela'
+      path: '/felicitacoes-tela'
+      fullPath: '/felicitacoes-tela'
+      preLoaderRoute: typeof FelicitacoesTelaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/convite_/felicitacoes': {
@@ -323,6 +343,7 @@ const rootRouteChildren: RootRouteChildren = {
   PortaRoute: PortaRoute,
   PresencasRoute: PresencasRoute,
   TelaRoute: TelaRoute,
+  FelicitacoesTelaRoute: FelicitacoesTelaRoute,
   ConviteFelicitacoesRoute: ConviteFelicitacoesRoute,
   ConviteFotoRoute: ConviteFotoRoute,
   ConvitePresencaRoute: ConvitePresencaRoute,
