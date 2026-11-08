@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MessageCircleHeart, Radio, Sparkles, Smartphone } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import j2 from "@/assets/journey-2.jpg";
 import { DOCK_FELICITATIONS_COUNT, useTelaBrindes } from "@/hooks/useTelaBrindes";
-import { PreloadedCoverImage } from "@/components/PreloadedCoverImage";
+import { TelaScreenBackdrop } from "@/components/TelaScreenBackdrop";
 import {
   fetchRecentFelicitacoes,
   fetchScreenState,
@@ -28,96 +27,6 @@ export const Route = createFileRoute("/tela")({
 
 const CONFETTI = ["✨", "🎓", "💛", "⭐", "🎉", "✨", "💫", "🎊"];
 const IDLE_ROTATE_MS = 9000;
-const LIVE_SLIDE_MS = 8000;
-
-function LiveSlideBackground({ slides, fallbackSrc }: { slides: { id: number; url: string }[]; fallbackSrc: string }) {
-  const [index, setIndex] = useState(0);
-  const [readyUrls, setReadyUrls] = useState<Set<string>>(() => new Set());
-  const lastShownIndexRef = useRef(0);
-
-  const slideKey = slides.map((s) => s.id).join(",");
-  const urls = slides.map((s) => mediaUrl(s.url));
-
-  useEffect(() => {
-    setIndex(0);
-    lastShownIndexRef.current = 0;
-  }, [slideKey]);
-
-  useEffect(() => {
-    let cancelled = false;
-    for (const url of urls) {
-      preloadImage(url)
-        .then(() => {
-          if (cancelled) return;
-          setReadyUrls((prev) => {
-            if (prev.has(url)) return prev;
-            const next = new Set(prev);
-            next.add(url);
-            return next;
-          });
-        })
-        .catch(() => undefined);
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [slideKey, urls.join("|")]);
-
-  useEffect(() => {
-    if (slides.length < 2) return;
-    const id = setInterval(() => {
-      setIndex((i) => {
-        const next = (i + 1) % slides.length;
-        const nextUrl = mediaUrl(slides[next]!.url);
-        if (!readyUrls.has(nextUrl)) return i;
-        return next;
-      });
-    }, LIVE_SLIDE_MS);
-    return () => clearInterval(id);
-  }, [slides, readyUrls]);
-
-  const showIndex = (() => {
-    const currentUrl = urls[index];
-    if (currentUrl && readyUrls.has(currentUrl)) {
-      lastShownIndexRef.current = index;
-      return index;
-    }
-    const last = lastShownIndexRef.current;
-    const lastUrl = urls[last];
-    if (lastUrl && readyUrls.has(lastUrl)) return last;
-    return -1;
-  })();
-
-  const showFallback = slides.length === 0 || showIndex < 0;
-
-  return (
-    <>
-      <img
-        src={fallbackSrc}
-        alt=""
-        aria-hidden
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1200ms] ease-in-out ${
-          showFallback ? "opacity-70" : "opacity-0"
-        }`}
-      />
-      {slides.map((slide, i) => {
-        const src = mediaUrl(slide.url);
-        const loaded = readyUrls.has(src);
-        const visible = i === showIndex && loaded;
-        return (
-          <img
-            key={slide.id}
-            src={src}
-            alt=""
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1200ms] ease-in-out ${
-              visible ? "opacity-70" : "opacity-0"
-            }`}
-          />
-        );
-      })}
-    </>
-  );
-}
 
 function PhotoSpotlight({ toast }: { toast: Extract<ScreenToast, { kind: "photo" }> }) {
   const src = mediaUrl(toast.url);
@@ -235,20 +144,15 @@ function TelaStage({
 
   const mode: ScreenMode = screenState?.mode ?? "live";
   const liveSlides = screenState?.live_slides ?? [];
-  const bg = screenState?.active_media?.url ? mediaUrl(screenState.active_media.url) : j2;
-  const isVideo = mode !== "live" && screenState?.active_media?.media_type === "video";
 
   return (
     <div className="dark grid min-h-screen place-items-center bg-secondary">
       <div className="relative overflow-hidden bg-background text-foreground" style={{ width: 1920, height: 1080 }}>
-        {mode === "live" ? (
-          <LiveSlideBackground slides={liveSlides} fallbackSrc={j2} />
-        ) : isVideo ? (
-          <video src={bg} className="absolute inset-0 h-full w-full object-cover opacity-70" autoPlay muted loop playsInline />
-        ) : (
-          <PreloadedCoverImage src={bg} />
-        )}
-        <div className="bg-veil absolute inset-0" />
+        <TelaScreenBackdrop
+          mode={mode}
+          liveSlides={liveSlides}
+          activeMedia={screenState?.active_media ?? null}
+        />
 
         {mode === "live" && (
           <div className="absolute left-12 top-10 z-10 flex items-center gap-3 rounded-full bg-destructive px-5 py-2 font-semibold text-destructive-foreground">

@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MessageCircleHeart, Sparkles } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import j2 from "@/assets/journey-2.jpg";
+import { TelaScreenBackdrop } from "@/components/TelaScreenBackdrop";
 import { type FelicitacaoPhase, useFelicitacoesTela } from "@/hooks/useFelicitacoesTela";
-import { useScreenToasts } from "@/hooks/useScreenToasts";
-import { fetchRecentFelicitacoes } from "@/lib/api";
+import { useTelaRealtime } from "@/hooks/useTelaRealtime";
+import { fetchRecentFelicitacoes, fetchScreenState, type ScreenMode } from "@/lib/api";
+import type { ScreenStatePayload } from "@/lib/screen-ws";
 
 /** Tela só de felicitações (sem selfies nem galeria). Use em projector separado de `/tela`. */
 export const Route = createFileRoute("/felicitacoes-tela")({
@@ -93,19 +94,27 @@ function FelicitacaoStage({ phase, children }: { phase: FelicitacaoPhase; childr
 
 function FelicitacoesTelaStage({
   pool,
+  initialState,
 }: {
   pool: { id: number; guest_name: string; message: string }[];
+  initialState: ScreenStatePayload | null;
 }) {
   const { display, phase, enqueue } = useFelicitacoesTela(pool);
   const enqueueRef = useRef(enqueue);
   enqueueRef.current = enqueue;
-  const { wsLive } = useScreenToasts((t) => enqueueRef.current(t));
+  const { screenState, wsLive } = useTelaRealtime(initialState, (t) => enqueueRef.current(t));
+
+  const mode: ScreenMode = screenState?.mode ?? "live";
+  const liveSlides = screenState?.live_slides ?? [];
 
   return (
     <div className="dark grid min-h-screen place-items-center bg-secondary">
       <div className="relative overflow-hidden bg-background text-foreground" style={{ width: 1920, height: 1080 }}>
-        <img src={j2} alt="" className="absolute inset-0 h-full w-full object-cover opacity-[0.22]" aria-hidden />
-        <div className="bg-veil absolute inset-0" />
+        <TelaScreenBackdrop
+          mode={mode}
+          liveSlides={liveSlides}
+          activeMedia={screenState?.active_media ?? null}
+        />
 
         <header className="absolute left-12 top-10 z-10">
           <p className="text-xs font-semibold uppercase tracking-[0.45em] text-gold-soft">Graduação</p>
@@ -188,15 +197,27 @@ function FelicitacoesTelaStage({
 }
 
 function FelicitacoesTelaPage() {
-  const [pool, setPool] = useState<{ id: number; guest_name: string; message: string }[] | null>(null);
+  const [boot, setBoot] = useState<{
+    pool: { id: number; guest_name: string; message: string }[];
+    state: ScreenStatePayload | null;
+  } | null>(null);
 
   useEffect(() => {
-    fetchRecentFelicitacoes(40)
-      .then((items) => setPool(items))
-      .catch(() => setPool([]));
+    Promise.all([fetchScreenState(), fetchRecentFelicitacoes(40)])
+      .then(([state, pool]) =>
+        setBoot({
+          state: {
+            mode: state.mode,
+            active_media: state.active_media,
+            live_slides: state.live_slides ?? [],
+          },
+          pool,
+        }),
+      )
+      .catch(() => setBoot({ state: null, pool: [] }));
   }, []);
 
-  if (!pool) {
+  if (!boot) {
     return (
       <div className="dark grid min-h-screen place-items-center bg-secondary text-muted-foreground">
         A preparar as felicitações…
@@ -204,5 +225,5 @@ function FelicitacoesTelaPage() {
     );
   }
 
-  return <FelicitacoesTelaStage pool={pool} />;
+  return <FelicitacoesTelaStage pool={boot.pool} initialState={boot.state} />;
 }
