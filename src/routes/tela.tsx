@@ -88,13 +88,18 @@ function LiveSlideBackground({ slides, fallbackSrc }: { slides: { id: number; ur
     return -1;
   })();
 
-  if (slides.length === 0) {
-    return <img src={fallbackSrc} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />;
-  }
+  const showFallback = slides.length === 0 || showIndex < 0;
 
   return (
     <>
-      <img src={fallbackSrc} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" aria-hidden />
+      <img
+        src={fallbackSrc}
+        alt=""
+        aria-hidden
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1200ms] ease-in-out ${
+          showFallback ? "opacity-70" : "opacity-0"
+        }`}
+      />
       {slides.map((slide, i) => {
         const src = mediaUrl(slide.url);
         const loaded = readyUrls.has(src);
